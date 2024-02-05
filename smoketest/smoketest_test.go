@@ -21,7 +21,7 @@ import (
 func TestSmokeTest(t *testing.T) {
 	t.Run("smoke test success", func(t *testing.T) {
 		// prepare
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
 		// mock hagall messages
@@ -87,7 +87,7 @@ func TestSmokeTest(t *testing.T) {
 		stReq := hsmoketest.SmokeTestRequest{
 			Endpoint:           server.URL,
 			MaxSessionIDLength: 11,
-			Timeout:            10 * time.Second,
+			Timeout:            time.Second,
 		}
 		body, err := json.Marshal(stReq)
 		require.NoError(t, err)
@@ -106,7 +106,7 @@ func TestSmokeTest(t *testing.T) {
 
 	t.Run("smoke test failed - offline", func(t *testing.T) {
 		// prepare
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
 		ctx = context.WithValue(ctx, testCtxKeyValue, testContext{
@@ -134,7 +134,7 @@ func TestSmokeTest(t *testing.T) {
 		stReq := hsmoketest.SmokeTestRequest{
 			Endpoint:           "http://otherhagall",
 			MaxSessionIDLength: 11,
-			Timeout:            10 * time.Second,
+			Timeout:            time.Second,
 		}
 		body, err := json.Marshal(stReq)
 		require.NoError(t, err)

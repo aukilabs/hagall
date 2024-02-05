@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/aukilabs/hagall-common/errors"
-	hailhttp "github.com/aukilabs/hagall-common/http"
+	httpcmn "github.com/aukilabs/hagall-common/http"
 	"github.com/aukilabs/hagall-common/messages/hagallpb"
 	"github.com/aukilabs/hagall-common/ncsclient"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
@@ -54,8 +54,8 @@ type RealtimeHandler struct {
 
 func (h *RealtimeHandler) HandleConnect(conn *websocket.Conn) {
 	req := conn.Request()
-	h.clientID = req.Header.Get(hailhttp.HeaderPosemeshClientID)
-	h.appKey = hailhttp.GetAppKeyFromHagallUserToken(hailhttp.GetUserTokenFromHTTPRequest(req))
+	h.clientID = req.Header.Get(httpcmn.HeaderPosemeshClientID)
+	h.appKey = httpcmn.GetAppKeyFromHagallUserToken(httpcmn.GetUserTokenFromHTTPRequest(req))
 
 	h.conn = conn
 }

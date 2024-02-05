@@ -20,7 +20,7 @@ import (
 	"github.com/aukilabs/hagall-common/errors"
 	"github.com/aukilabs/hagall-common/events"
 	hds "github.com/aukilabs/hagall-common/hdsclient"
-	hailhttp "github.com/aukilabs/hagall-common/http"
+	httpcmn "github.com/aukilabs/hagall-common/http"
 	"github.com/aukilabs/hagall-common/logs"
 	"github.com/aukilabs/hagall-common/metrics"
 	"github.com/aukilabs/hagall-common/ncsclient"
@@ -197,7 +197,8 @@ func main() {
 
 	service.HandleFunc("/smoke-test", hagallhttp.VerifyAuthTokenHandler(hdsClient, smoketest.HandleSmokeTest(ctx, smoketest.Options{
 		Endpoint:              conf.PublicEndpoint,
-		MakeHagallServerToken: hailhttp.GenerateHagallUserAccessToken,
+		UserAgent:             fmt.Sprintf("Hagall %s", version),
+		MakeHagallServerToken: httpcmn.GenerateHagallUserAccessToken,
 		SendResult: func(ctx context.Context, res hsmoketest.SmokeTestResults) error {
 			return hdsClient.SendSmokeTestResult(ctx, res)
 		},

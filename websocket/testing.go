@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/aukilabs/hagall-common/errors"
-	hailhttp "github.com/aukilabs/hagall-common/http"
+	httpcmn "github.com/aukilabs/hagall-common/http"
 	"github.com/aukilabs/hagall-common/logs"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
 	"github.com/aukilabs/hagall/models"
@@ -75,7 +75,7 @@ func newTestingEnv(t *testing.T, newHandler func() Handler) (*websocket.Conn, *w
 
 		config.Header.Set("User-Agent", "ted")
 		config.Header.Set("X-Forwarded-for", "192.0.0.0")
-		config.Header.Set(hailhttp.HeaderPosemeshClientID, uuid.NewString())
+		config.Header.Set(httpcmn.HeaderPosemeshClientID, uuid.NewString())
 
 		conn, err := websocket.DialConfig(config)
 		if err != nil {

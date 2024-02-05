@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/aukilabs/hagall-common/errors"
-	hailhttp "github.com/aukilabs/hagall-common/http"
+	httpcmn "github.com/aukilabs/hagall-common/http"
 	"github.com/aukilabs/hagall-common/logs"
 	"github.com/aukilabs/hagall-common/messages/hagallpb"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
@@ -53,7 +53,7 @@ func (h *handlerWithLogs) HandleConnect(conn *websocket.Conn) {
 
 	req := conn.Request()
 	h.originalRequest = req
-	h.appKey = hailhttp.GetAppKeyFromHagallUserToken(hailhttp.GetUserTokenFromHTTPRequest(req))
+	h.appKey = httpcmn.GetAppKeyFromHagallUserToken(httpcmn.GetUserTokenFromHTTPRequest(req))
 
 	logs.WithClientID(h.GetClientID()).
 		WithTag(logs.AppKeyTag, h.appKey).
@@ -82,9 +82,9 @@ func (h *handlerWithLogs) HandleParticipantJoin(ctx context.Context, handleFrame
 				CloudFrontViewerAddress string `json:"cloudfront_viewer_address,omitempty"`
 			}{
 				UserAgent:               h.originalRequest.UserAgent(),
-				XForwardedFor:           h.originalRequest.Header.Get(hailhttp.XForwardedForHeaderKey),
-				CloudFrontCountryName:   h.originalRequest.Header.Get(hailhttp.CloudFrontCountryNameHeaderKey),
-				CloudFrontViewerAddress: h.originalRequest.Header.Get(hailhttp.CloudFrontViewerAddressHeaderKey),
+				XForwardedFor:           h.originalRequest.Header.Get(httpcmn.XForwardedForHeaderKey),
+				CloudFrontCountryName:   h.originalRequest.Header.Get(httpcmn.CloudFrontCountryNameHeaderKey),
+				CloudFrontViewerAddress: h.originalRequest.Header.Get(httpcmn.CloudFrontViewerAddressHeaderKey),
 			}).
 			Info("participant failed to join a session")
 		return nil
@@ -106,9 +106,9 @@ func (h *handlerWithLogs) HandleParticipantJoin(ctx context.Context, handleFrame
 			CloudFrontViewerAddress string `json:"cloudfront_viewer_address,omitempty"`
 		}{
 			UserAgent:               h.originalRequest.UserAgent(),
-			XForwardedFor:           h.originalRequest.Header.Get(hailhttp.XForwardedForHeaderKey),
-			CloudFrontCountryName:   h.originalRequest.Header.Get(hailhttp.CloudFrontCountryNameHeaderKey),
-			CloudFrontViewerAddress: h.originalRequest.Header.Get(hailhttp.CloudFrontViewerAddressHeaderKey),
+			XForwardedFor:           h.originalRequest.Header.Get(httpcmn.XForwardedForHeaderKey),
+			CloudFrontCountryName:   h.originalRequest.Header.Get(httpcmn.CloudFrontCountryNameHeaderKey),
+			CloudFrontViewerAddress: h.originalRequest.Header.Get(httpcmn.CloudFrontViewerAddressHeaderKey),
 		}).
 		Info("participant joined a session")
 	return nil

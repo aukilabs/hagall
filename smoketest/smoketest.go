@@ -14,6 +14,7 @@ import (
 
 type Options struct {
 	Endpoint              string
+	UserAgent             string
 	MakeHagallServerToken func(string, string, time.Duration) (string, error)
 	SendResult            func(context.Context, hsmoketest.SmokeTestResults) error
 }

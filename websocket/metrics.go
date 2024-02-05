@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/aukilabs/hagall-common/errors"
-	hailhttp "github.com/aukilabs/hagall-common/http"
+	httpcmn "github.com/aukilabs/hagall-common/http"
 	"github.com/aukilabs/hagall-common/messages/hagallpb"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
 	"github.com/aukilabs/hagall/modules"
@@ -114,7 +114,7 @@ type handlerWithMetrics struct {
 
 func (h *handlerWithMetrics) HandleConnect(conn *websocket.Conn) {
 	req := conn.Request()
-	h.appKey = hailhttp.GetAppKeyFromHagallUserToken(hailhttp.GetUserTokenFromHTTPRequest(req))
+	h.appKey = httpcmn.GetAppKeyFromHagallUserToken(httpcmn.GetUserTokenFromHTTPRequest(req))
 
 	wsConnectedClients.
 		With(prometheus.Labels{
