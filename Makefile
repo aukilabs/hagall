@@ -15,7 +15,7 @@ go-vendor: go-tidy
 	go mod vendor
 
 build: go-vendor
-	docker build -t $(DOCKER_REGISTRY)/hagall:${TAG} -t $(DOCKER_REGISTRY)/hagall:latest --build-arg VERSION=$(shell git describe --tags --abbrev=0) -f ./hagall/Dockerfile .
+	docker build -t $(DOCKER_REGISTRY)/hagall:${TAG} -t $(DOCKER_REGISTRY)/hagall:latest --build-arg VERSION=$(shell git describe --tags --abbrev=0) .
 
 # 
 # Dev Build
@@ -46,12 +46,6 @@ clean: services-stop go-tidy
 	@-rm -rf bin
 	@-rm -rf vendor
 
-proto:
-	@protoc --go_out=. ./pkg/hagallpb/hagall.proto
-	@protoc --go_out=. ./pkg/vikjapb/vikja.proto
-	@protoc --go_out=. ./pkg/odalpb/odal.proto
-	@protoc --go_out=. ./pkg/dagazpb/dagaz.proto
-
 tag: check-version test
 	@echo "\033[94m\n• Tagging ${VERSION}\033[00m"
 	@git tag ${VERSION}
@@ -68,4 +62,4 @@ else
 endif
 
 bin/hagall:
-	CGO_ENABLED=0 go build -mod vendor -ldflags "-X main.version=${VERSION}" -o ./bin/hagall ./hagall/cmd
+	CGO_ENABLED=0 go build -mod vendor -ldflags "-X main.version=${VERSION}" -o ./bin/hagall ./cmd
