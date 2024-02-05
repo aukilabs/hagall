@@ -5,8 +5,8 @@ services:
     container_name: nginx-proxy
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - conf:/etc/nginx/conf.d
       - vhost:/etc/nginx/vhost.d
@@ -33,7 +33,7 @@ services:
     volumes:
       - './hagall-private.key:/hagall-private.key:ro'
     ports:
-    - 18190:18190
+      - 18190:18190
     environment:
       VIRTUAL_HOST: hagall.example.com
       VIRTUAL_PORT: 8080
