@@ -1,0 +1,44 @@
+name: Test and build
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'develop'
+      - 'feature/**'
+      - 'bug/**'
+      - 'chore/**'
+      - 'hotfix/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    uses: aukilabs/github-actions/.github/workflows/golang-test.yml@v2
+    name: Test
+    with:
+      aws_region: ${{ vars.GLOBAL_COMMON_AWS_REGION }}
+      enable_integration_tests: true
+      enable_docker_compose: true
+      enable_coverage: true
+    secrets:
+      github_app_id: ${{ secrets.GLOBAL_GITHUB_APP_ID }}
+      github_app_private_key: ${{ secrets.GLOBAL_GITHUB_APP_PRIVATE_KEY }}
+      aws_access_key: ${{ secrets.GLOBAL_COMMON_AWS_ACCESS_KEY }}
+      aws_secret_access_key: ${{ secrets.GLOBAL_COMMON_AWS_SECRET_ACCESS_KEY }}
+  build:
+    uses: aukilabs/github-actions/.github/workflows/golang-build.yml@v2
+    name: Build
+    with:
+      aws_region: ${{ vars.GLOBAL_COMMON_AWS_REGION }}
+      apps: |
+        [
+          "hagall",
+        ]
+    secrets:
+      github_app_id: ${{ secrets.GLOBAL_GITHUB_APP_ID }}
+      github_app_private_key: ${{ secrets.GLOBAL_GITHUB_APP_PRIVATE_KEY }}
+      aws_access_key: ${{ secrets.GLOBAL_COMMON_AWS_ACCESS_KEY }}
+      aws_secret_access_key: ${{ secrets.GLOBAL_COMMON_AWS_SECRET_ACCESS_KEY }}
