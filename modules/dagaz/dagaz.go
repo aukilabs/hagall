@@ -3,7 +3,7 @@ package dagaz
 import (
 	"context"
 
-	"github.com/aukilabs/hagall-common/errors"
+	"github.com/aukilabs/go-tooling/pkg/errors"
 	"github.com/aukilabs/hagall-common/messages/dagazpb"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
 	"github.com/aukilabs/hagall/models"

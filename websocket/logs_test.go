@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aukilabs/hagall-common/logs"
+	"github.com/aukilabs/go-tooling/pkg/logs"
 	"github.com/stretchr/testify/require"
 )
 

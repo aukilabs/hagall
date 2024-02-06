@@ -3,7 +3,7 @@ package models
 import (
 	"sync"
 
-	"github.com/aukilabs/hagall-common/errors"
+	"github.com/aukilabs/go-tooling/pkg/errors"
 	"github.com/aukilabs/hagall-common/messages/hagallpb"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
 )

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aukilabs/hagall-common/errors"
-	"github.com/aukilabs/hagall-common/logs"
+	"github.com/aukilabs/go-tooling/pkg/errors"
+	"github.com/aukilabs/go-tooling/pkg/logs"
 	hsmoketest "github.com/aukilabs/hagall-common/smoketest"
 )
 

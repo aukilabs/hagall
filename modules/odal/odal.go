@@ -3,7 +3,7 @@ package odal
 import (
 	"context"
 
-	"github.com/aukilabs/hagall-common/errors"
+	"github.com/aukilabs/go-tooling/pkg/errors"
 	"github.com/aukilabs/hagall-common/messages/hagallpb"
 	"github.com/aukilabs/hagall-common/messages/odalpb"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"

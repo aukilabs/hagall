@@ -3,6 +3,7 @@ module github.com/aukilabs/hagall
 go 1.21
 
 require (
+	github.com/aukilabs/go-tooling v0.13.0
 	github.com/aukilabs/hagall-common v0.13.0
 	github.com/ethereum/go-ethereum v1.13.11
 	github.com/google/uuid v1.6.0

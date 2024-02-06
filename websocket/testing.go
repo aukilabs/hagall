@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aukilabs/hagall-common/errors"
+	"github.com/aukilabs/go-tooling/pkg/errors"
+	"github.com/aukilabs/go-tooling/pkg/logs"
 	httpcmn "github.com/aukilabs/hagall-common/http"
-	"github.com/aukilabs/hagall-common/logs"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
 	"github.com/aukilabs/hagall/models"
 	"github.com/aukilabs/hagall/modules"

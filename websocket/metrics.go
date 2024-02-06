@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/aukilabs/hagall-common/errors"
+	"github.com/aukilabs/go-tooling/pkg/errors"
 	httpcmn "github.com/aukilabs/hagall-common/http"
 	"github.com/aukilabs/hagall-common/messages/hagallpb"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"

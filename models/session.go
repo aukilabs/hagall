@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aukilabs/hagall-common/logs"
+	"github.com/aukilabs/go-tooling/pkg/logs"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
 	"github.com/google/uuid"
 )

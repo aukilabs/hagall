@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/aukilabs/go-tooling/pkg/logs"
 	hds "github.com/aukilabs/hagall-common/hdsclient"
 	httpcmn "github.com/aukilabs/hagall-common/http"
-	"github.com/aukilabs/hagall-common/logs"
 	"golang.org/x/net/websocket"
 )
 

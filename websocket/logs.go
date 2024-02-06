@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aukilabs/hagall-common/errors"
+	"github.com/aukilabs/go-tooling/pkg/errors"
+	"github.com/aukilabs/go-tooling/pkg/logs"
 	httpcmn "github.com/aukilabs/hagall-common/http"
-	"github.com/aukilabs/hagall-common/logs"
 	"github.com/aukilabs/hagall-common/messages/hagallpb"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
 	"golang.org/x/net/websocket"

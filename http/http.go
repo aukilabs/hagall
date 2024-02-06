@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/aukilabs/hagall-common/errors"
-	"github.com/aukilabs/hagall-common/logs"
+	"github.com/aukilabs/go-tooling/pkg/errors"
+	"github.com/aukilabs/go-tooling/pkg/logs"
 )
 
 func ListenAndServe(ctx context.Context, servers ...*http.Server) {
