@@ -1,0 +1,18 @@
+name: Test and build
+
+on: [push]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Tests
+    uses: aukilabs/go-tooling/.github/workflows/tests.yml@feature/reusable-workflows
+    with:
+      enable_coverage: true
+  build:
+    name: Build
+    needs: tests
+    uses: aukilabs/go-tooling/.github/workflows/build.yml@feature/reusable-workflows
