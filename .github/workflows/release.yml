@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   release:
-    uses: aukilabs/go-tooling/.github/workflows/release.yml@feature/reusable-workflows
+    uses: aukilabs/go-tooling/.github/workflows/release.yml@main
     name: Release
     with:
       app_name: hagall
