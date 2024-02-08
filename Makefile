@@ -30,7 +30,7 @@ run: go-build
 
 go-build: go-normalize
 	@mkdir -p bin
-	@go build -ldflags "-X main.version=$(shell git describe --tags --abbrev=0)" -o bin/hagall ./hagall/cmd
+	@go build -ldflags "-X main.version=$(shell git describe --tags --abbrev=0)" -o bin/hagall ./cmd
 	
 go-normalize:
 	@go fmt ./...
