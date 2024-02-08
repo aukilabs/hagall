@@ -1,0 +1,45 @@
+name: Release candidate
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  tests:
+    name: Tests
+    uses: aukilabs/go-tooling/.github/workflows/tests.yml@feature/workflow-features
+    with:
+      enable_coverage: true
+      enable_integration_tests: true
+      enable_docker_compose: true
+      aws_region: ${{ vars.GLOBAL_COMMON_AWS_REGION }}
+    secrets:
+      github_app_id: ${{ secrets.GLOBAL_PUBLIC_GITHUB_APP_ID }}
+      github_app_private_key: ${{ secrets.GLOBAL_PUBLIC_GITHUB_APP_PRIVATE_KEY }}
+      aws_access_key: ${{ secrets.GLOBAL_COMMON_AWS_ACCESS_KEY }}
+      aws_secret_access_key: ${{ secrets.GLOBAL_COMMON_AWS_SECRET_ACCESS_KEY }}
+  build:
+    name: Build
+    needs: tests
+    uses: aukilabs/go-tooling/.github/workflows/build.yml@feature/workflow-features
+    with:
+      app_name: hagall
+      version: ${{ github.ref_name }}
+    secrets:
+      docker_username: ${{ secrets.DOCKER_USERNAME }}
+      docker_password: ${{ secrets.DOCKER_PASSWORD }}
+  deploy:
+    name: Deploy
+    needs: build
+    uses: aukilabs/go-tooling/.github/workflows/deploy.yml@feature/workflow-features
+    with:
+      app_name: hagall
+      enable_sync: true
+      enable_restart: true
+      enable_ec2_deploy: true
+    secrets:
+      ssh_host: ${{ secrets.GLOBAL_SSH_HOST }}
+      ssh_key: ${{ secrets.GLOBAL_SSH_KEY }}
+      argocd_host: ${{ secrets.GLOBAL_PUBLIC_ARGOCD_HOST }}
+      argocd_password: ${{ secrets.GLOBAL_PUBLIC_ARGOCD_PASSWORD }}
