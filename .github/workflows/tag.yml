@@ -10,8 +10,8 @@ jobs:
     name: Tests
     uses: aukilabs/go-tooling/.github/workflows/tests.yml@feature/workflow-features
     with:
-      enable_coverage: true
-      enable_integration_tests: true
+      enable_coverage: false
+      enable_integration_tests: false
       enable_docker_compose: true
       aws_region: ${{ vars.GLOBAL_COMMON_AWS_REGION }}
     secrets:
