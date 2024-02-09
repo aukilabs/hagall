@@ -9,9 +9,9 @@ concurrency:
 jobs:
   tests:
     name: Tests
-    uses: aukilabs/go-tooling/.github/workflows/tests.yml@feature/workflow-features
+    uses: aukilabs/go-tooling/.github/workflows/tests.yml@main
     with:
       enable_coverage: true
   build:
     name: Build
-    uses: aukilabs/go-tooling/.github/workflows/build.yml@feature/workflow-features
+    uses: aukilabs/go-tooling/.github/workflows/build.yml@main

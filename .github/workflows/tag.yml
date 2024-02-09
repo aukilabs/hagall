@@ -8,7 +8,7 @@ on:
 jobs:
   tests:
     name: Tests
-    uses: aukilabs/go-tooling/.github/workflows/tests.yml@feature/workflow-features
+    uses: aukilabs/go-tooling/.github/workflows/tests.yml@main
     with:
       enable_coverage: false
       enable_integration_tests: false
@@ -22,7 +22,7 @@ jobs:
   build:
     name: Build
     needs: tests
-    uses: aukilabs/go-tooling/.github/workflows/build.yml@feature/workflow-features
+    uses: aukilabs/go-tooling/.github/workflows/build.yml@main
     with:
       app_name: hagall
       version: ${{ github.ref_name }}
@@ -32,7 +32,7 @@ jobs:
   deploy:
     name: Deploy
     needs: build
-    uses: aukilabs/go-tooling/.github/workflows/deploy.yml@feature/workflow-features
+    uses: aukilabs/go-tooling/.github/workflows/deploy.yml@main
     with:
       app_name: hagall
       enable_sync: true
