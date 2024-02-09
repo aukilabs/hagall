@@ -33,7 +33,7 @@ include the following info:
 
 If you would like to contribute code to the project, please open a pull request
 with your changes. If you did not yet read and sign our
-[Contributor License Agreement](link), you will be asked to do so when opening
+Contributor License Agreement, you will be asked to do so when opening
 a pull request.
 
 When contributing code, make sure your code follows the code style/format and
