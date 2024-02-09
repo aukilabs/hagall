@@ -1,6 +1,9 @@
 name: Test and build
 
-on: [push]
+on:
+  push:
+    branches:
+      - '**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -9,11 +12,9 @@ concurrency:
 jobs:
   tests:
     name: Tests
-    if: "!startsWith(github.ref, 'refs/tags/')"
     uses: aukilabs/go-tooling/.github/workflows/tests.yml@main
     with:
       enable_coverage: true
   build:
     name: Build
-    if: "!startsWith(github.ref, 'refs/tags/')"
     uses: aukilabs/go-tooling/.github/workflows/build.yml@main
