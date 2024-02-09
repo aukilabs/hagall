@@ -62,8 +62,8 @@ with additional items evolved from our team’s requirements.
 - Are interfaces in the code defined in the correct packages?
 - Do go-routines in the code have clear lifetimes?
 - Is parallelism in the code handled via go-routines and channels with synchronous methods?
-- Does the code have meaningful Doc Comments?
-- Does the code have meaningful Package Comments?
+- Does the code have meaningful doc comments?
+- Does the code have meaningful package comments?
 - Does the code use Contexts correctly?
 - Do unit tests fail with meaningful messages?
 - Does the code use pointers unnecesarily?
