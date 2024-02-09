@@ -24,7 +24,7 @@ include the following info:
 
 * Relevant logs
 * Stack trace
-* OS, Platform and Version (Windows, Linux, macOS, x86, ARM)
+* OS, platform and version (Windows/Linux/macOS, x86/ARM)
 * Version of the interpreter, compiler, SDK, runtime environment, package
   manager etc. depending on what seems relevant.
 * Can you reliably reproduce the issue?
