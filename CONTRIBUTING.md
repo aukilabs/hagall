@@ -69,7 +69,7 @@ with additional items evolved from our team’s requirements.
 - Does the code use pointers unnecesarily?
 - Does the code use deprecated / archived packages?
 - Are all inputs coming from user validated?
-- Does the Pull Request / code changes adhere to best practices outlined by Auki Labs, Golang, Postgres or other tech stacks we are using?
+- Does the pull request / code change adhere to best practices outlined by Auki Labs, Golang, Postgres or other tech stacks we are using?
 
 ---
 
