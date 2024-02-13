@@ -153,6 +153,9 @@ If you're using a non-version specific tag (`stable` or `latest`) or if the vers
 
 If you're using a version-specific tag and the new version of Hagall you want to upgrade to doesn't match the tag you use, you need to first change the tag you use and then restart your container. (`v0` matches any v0.x.x version, `v0.5` matches any v0.5.x version, and so on.)
 
+Remove the older images not currently in use. Run `docker images` command to see a full list of images that you have currently on your machine. Find the image or the images that are not being used by your containers and copy the image ID (IMAGE_ID) from the output. You will use it in the next command. In this next command you'll be removing your old Docker image based on image ID.
+Run `sudo docker rmi <IMAGE_ID>` replacing `<IMAGE_ID> with your desired image ID. Don't be afraid to delete older images, Docker is smart enough to don't let you delete a image that is currently in use.
+
 ### Docker Compose
 
 Since Hagall needs to be exposed with an HTTPS address and Hagall itself doesn't terminate HTTPS, instead of using the pure Docker setup as described above, we recommend you to use our Docker Compose file that sets up an `nginx-proxy` container that terminates HTTPS and a `letsencrypt` container that obtains a free Let's Encrypt SSL certificate alongside Hagall.
@@ -168,6 +171,9 @@ Just as with the pure Docker setup, we recommend you configure Docker to start a
 #### Upgrading
 
 You can do the same steps as for Docker, but if you're not already running Hagall or you have modified the `docker-compose.yml` file recently and want to deploy the changes, you can navigate to the folder where you have your `docker-compose.yml` file and then run `docker-compose pull` followed by `docker-compose down` and `docker-compose up -d`.
+
+Remove the older images not currently in use. Run `docker images` command to see a full list of images that you have currently on your machine. Find the image or the images that are not being used by your containers and copy the image ID (IMAGE_ID) from the output. You will use it in the next command. In this next command you'll be removing your old Docker image based on image ID.
+Run `sudo docker rmi <IMAGE_ID>` replacing `<IMAGE_ID>` with your desired image ID. Don't be afraid to delete older images, Docker is smart enough to don't let you delete a image that is currently in use.
 
 Note that the `docker-compose pull` command will also upgrade the other containers defined in `docker-compose.yml` such as the nginx proxy and the Let's Encrypt helper.
 
