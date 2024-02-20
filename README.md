@@ -20,11 +20,11 @@ The core responsibilities of Hagall are:
 
 Every Hagall server needs a unique wallet to participate in the [posemesh economy](https://www.posemesh.org/#economy).
 
-- [doc/videotutorial.md](Video Tutorial)
-- [doc/operatormanual.md](Server Operator's Manual)
-- [doc/minimumrequirements.md](Minimum Requirements)
-- [doc/deployment.md](Deployment)
-- [doc/testing.md](Deployment)
-- [doc/troubleshooting.md](Troubleshooting)
-- [doc/adminport.md](Admin Port)
-- [doc/entitycomponentsystem.md](Hagall Entity Component System)
+- [Video Tutorial](doc/videotutorial.md)
+- [Server Operator's Manual](doc/operatormanual.md)
+- [Minimum Requirements](doc/minimumrequirements.md)
+- [Deployment](doc/deployment.md)
+- [Testing](doc/testing.md)
+- [Troubleshooting](doc/troubleshooting.md)
+- [Admin Endpoints](doc/adminendpoints.md)
+- [Hagall Entity Component System](doc/entitycomponentsystem.md)

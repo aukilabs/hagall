@@ -15,10 +15,8 @@ Systems can add, remove or modify Components during runtime.
 
 Following protobuf messages are used to interact with the Hagall Entity Component System
 
-- **[EntityComponentTypeAddRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L501)**: Adds a new Component type to HECS. This is the first step to register a new Component type.
-- **[EntityComponentTypeGetNameRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L534)**: Used to query the tag/name of a Component type when the id is known. This does not create a new Component type if tag/name is unknown.
-- **[EntityComponentTypeGetIdRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L567)**: Used to query the id of a Component type when the tag/name is know.
-- **[EntityComponentAddRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L600)**: Attaches a new Component to entity.
-  - The request message contains the `entity_id`, the `component_id` and the `bytes data` payload
-  - Not sure we need a response.
-- **[EntityComponentUpdateRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L700)**: Updates the Component of a certain entity with a new state.
+- [EntityComponentTypeAddRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L501): Adds a new Component type to HECS. This is the first step to register a new Component type.
+- [EntityComponentTypeGetNameRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L534): Used to query the tag/name of a Component type when the id is known. This does not create a new Component type if tag/name is unknown.
+- [EntityComponentTypeGetIdRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L567): Used to query the id of a Component type when the tag/name is know.
+- [EntityComponentAddRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L600): Attaches a new Component to entity.
+- [EntityComponentUpdateRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L700): Updates the Component of a certain entity with a new state.
