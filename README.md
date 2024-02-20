@@ -20,6 +20,8 @@ The core responsibilities of Hagall are:
 
 Every Hagall server needs a unique wallet to participate in the [posemesh economy](https://www.posemesh.org/#economy).
 
+## Documentations
+
 - [Video Tutorial](doc/videotutorial.md)
 - [Server Operator's Manual](doc/operatormanual.md)
 - [Minimum Requirements](doc/minimumrequirements.md)
