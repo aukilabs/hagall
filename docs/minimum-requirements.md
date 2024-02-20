@@ -1,8 +1,8 @@
-# Minimum requirements
+# Minimum Requirements
 
 Most modern computers will be able to run Hagall. We have tested on desktops, laptops, servers and Raspberry Pis.
 
-- An x86 or ARMv6+ processor
+- An x86, x86_64 or ARMv6+
 - At least 64 MiB of RAM
 - At least 20 MiB of disk space
 - A supported operating system, we currently provide pre-compiled binaries for Windows, macOS, Linux, FreeBSD, Solaris as well as Docker images

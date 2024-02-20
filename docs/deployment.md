@@ -92,9 +92,9 @@ Auki provides a Helm chart for running Hagall in Kubernetes. We recommend that y
 
 ### Requirements
 
-* Kubernetes 1.14+
-* Helm 3
-* An HTTPS and WebSocket compatible ingress controller with an SSL certificate that has already been configured
+- Kubernetes 1.14+
+- Helm 3
+- An HTTPS and WebSocket compatible ingress controller with an SSL certificate that has already been configured
 
 ### Installing
 

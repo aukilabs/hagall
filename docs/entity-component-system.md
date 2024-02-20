@@ -13,7 +13,7 @@ Systems can add, remove or modify Components during runtime.
 
 ## Using the Hagall Entity Component System
 
-Following protobuf messages are used to interact with the Hagall Entity Component System
+The following protobuf messages are used to interact with the Hagall Entity Component System
 
 - [EntityComponentTypeAddRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L501): Adds a new Component type to HECS. This is the first step to register a new Component type.
 - [EntityComponentTypeGetNameRequest](https://github.com/aukilabs/hagall-common/blob/d51b9126b4f16210ece18bf062f67ca1a635b3ae/messages/hagallpb/hagall.proto#L534): Used to query the tag/name of a Component type when the id is known. This does not create a new Component type if tag/name is unknown.
