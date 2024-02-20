@@ -1,5 +1,10 @@
 # Deployment
 
+- [Binary](#binary)
+- [Docker](#docker)
+- [Docker Compose](#docker-compose)
+- [Kubernetes](#kubernetes)
+
 ## Binary
 
 > **_NOTE:_** If you choose to use this deployment method, you need to set up your own HTTPS web server or reverse proxy with an SSL certificate. Hagall listens for incoming connections on port 4000 by default, but this is changeable, see the configuration options above.
@@ -8,11 +13,11 @@
 
 We build pre-compiled binaries for these operating systems and architectures:
 
-* Windows x86, x86_64
-* macOS x86_64, ARM64 (M1)
-* Linux x86, x86_64, ARM, ARM64
-* FreeBSD x86, x86_64
-* Solaris x86_64
+- Windows x86, x86_64
+- macOS x86_64, ARM64 (M1)
+- Linux x86, x86_64, ARM, ARM64
+- FreeBSD x86, x86_64
+- Solaris x86_64
 
 > **_NOTE:_** Auki Labs doesn't test all of these platforms actively. Windows, FreeBSD and Solaris builds are currently experimental. We don't guarantee that everything works but feel free to reach out with your test results.
 
@@ -42,19 +47,20 @@ docker run --name=hagall --restart=unless-stopped --detach --mount "type=bind,so
 ```
 
 Hagall listens for incoming traffic on port 4000 by default. The port can be changed by
-changing Hagall's [configuration](#Configuration) or by simply changing the publish
+changing Hagall's [configuration](configuration.md) or by simply changing the publish
 (`-p`) argument in the `docker run` command.
 
 We also recommend you to configure Docker to start automatically with your operating system. Using `--restart=unless-stopped` in your `docker run` command will start Hagall automatically after the Docker daemon has started.
 
 ### Supported tags
+
 _See the full list on [Docker Hub](https://hub.docker.com/r/aukilabs/hagall)._
 
-* `latest` (bleeding edge, not recommended)
-* `stable` (latest stable version, recommended)
-* `v0` (specific major version)
-* `v0.5` (specific minor version)
-* `v0.5.0` (specific patch version)
+- `latest` (bleeding edge, not recommended)
+- `stable` (latest stable version, recommended)
+- `v0` (specific major version)
+- `v0.5` (specific minor version)
+- `v0.5.0` (specific patch version)
 
 ### Upgrading
 
