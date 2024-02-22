@@ -271,9 +271,11 @@ func main() {
 	admin.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
 	admin.Handle("/debug/pprof/block", pprof.Handler("block"))
 
+	walletAddress := crypto.PubkeyToAddress(privateKey.PublicKey)
 	logs.WithTag("version", version).
 		WithTag("log_level", conf.LogLevel).
 		WithTag("endpoint", conf.PublicEndpoint).
+		WithTag("wallet_address", walletAddress).
 		Info("starting hagall server")
 
 	hagallhttp.ListenAndServe(ctx,
