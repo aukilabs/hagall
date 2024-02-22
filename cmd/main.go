@@ -271,7 +271,7 @@ func main() {
 	admin.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
 	admin.Handle("/debug/pprof/block", pprof.Handler("block"))
 
-	walletAddress := crypto.PubkeyToAddress(privateKey.PublicKey)
+	walletAddress := strings.ToLower(crypto.PubkeyToAddress(privateKey.PublicKey).Hex())
 	logs.WithTag("version", version).
 		WithTag("log_level", conf.LogLevel).
 		WithTag("endpoint", conf.PublicEndpoint).
