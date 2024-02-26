@@ -68,6 +68,6 @@ integration-tests:
 	@pip3 install -q web3
 	@python3 -c "from web3 import Web3; w3 = Web3(); acc = w3.eth.account.create(); print(f'{w3.to_hex(acc.key)}')" > hagall-private.key
 	@chmod 400 hagall-private.key
-	@HAGALL_PUBLIC_ENDPOINT="$$TUNNEL_URL" go run ./cmd &
+	@HAGALL_PUBLIC_ENDPOINT="$$TUNNEL_URL" HAGALL_PRIVATE_KEY_FILE="hagall-private.key" go run ./cmd &
 	@for i in $$(seq 1 5); do echo "Checking Hagall, attempt $$i"; curl --output /dev/null --verbose --fail http://localhost:4000/ready; code=$$?; test "$$code" = 0 && break; sleep 2; done; test "$$code" = 0 || (echo "Timeout when waiting for Hagall"; exit 1)
 	go run github.com/aukilabs/hagall-common/scenariorunner/cmd
