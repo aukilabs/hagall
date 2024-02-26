@@ -63,3 +63,8 @@ endif
 
 bin/hagall:
 	CGO_ENABLED=0 go build -mod vendor -ldflags "-X main.version=${VERSION}" -o ./bin/hagall ./cmd
+
+integration-tests:
+	@HAGALL_PUBLIC_ENDPOINT="$$(cat tunnelURL.md)" go run ./cmd &
+	@for i in $$(seq 1 5); do echo "Checking Hagall, attempt $$i"; curl --output /dev/null --verbose --fail http://localhost:4000/ready; code=$$?; test "$$code" = 0 && break; sleep 2; done; test "$$code" = 0 || (echo "Timeout when waiting for Hagall"; exit 1)
+	go run github.com/aukilabs/hagall-common/scenariorunner/cmd

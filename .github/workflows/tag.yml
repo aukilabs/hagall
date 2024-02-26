@@ -13,12 +13,9 @@ jobs:
       enable_coverage: false
       enable_integration_tests: false
       enable_docker_compose: true
-      aws_region: ${{ vars.GLOBAL_COMMON_AWS_REGION }}
     secrets:
       github_app_id: ${{ secrets.GLOBAL_PUBLIC_GITHUB_APP_ID }}
       github_app_private_key: ${{ secrets.GLOBAL_PUBLIC_GITHUB_APP_PRIVATE_KEY }}
-      aws_access_key: ${{ secrets.GLOBAL_COMMON_AWS_ACCESS_KEY }}
-      aws_secret_access_key: ${{ secrets.GLOBAL_COMMON_AWS_SECRET_ACCESS_KEY }}
   build:
     name: Build
     needs: tests

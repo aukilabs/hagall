@@ -9,9 +9,13 @@ concurrency:
 jobs:
   tests:
     name: Tests
-    uses: aukilabs/go-tooling/.github/workflows/tests.yml@main
+    uses: aukilabs/go-tooling/.github/workflows/tests.yml@PI-185-hagall-integration-tests-and-hds-sandbox
     with:
       enable_coverage: true
+      enable_integration_tests: true
+      enable_tunnel: true
+    secrets:
+      ngrok_auth_token: ${{ secrets.GLOBAL_PUBLIC_NGROK_AUTH_TOKEN }}
   build:
     name: Build
     uses: aukilabs/go-tooling/.github/workflows/build.yml@main
