@@ -204,6 +204,11 @@ func main() {
 		},
 	})))
 
+	readinessCheck := func() bool {
+		return hdsClient.GetRegistrationStatus() == hds.RegistrationStatusRegistered
+	}
+	service.Handle("/ready", hagallhttp.HandleWithCORS(http.HandlerFunc(hagallhttp.HandleReadyCheck(readinessCheck))))
+
 	sessions := models.SessionStore{
 		DiscoveryService: hdsClient,
 	}
