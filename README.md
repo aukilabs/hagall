@@ -30,5 +30,5 @@ Every Hagall server needs a unique wallet to participate in the [posemesh econom
 - [Admin Endpoints](docs/admin-endpoints.md)
 - [Hagall Entity Component System](docs/entity-component-system.md)
 - [Metrics](docs/metrics.md)
-- [Configuration](https://github.com/aukilabs/hagall/blob/main/docs/configuration.md)
+- [Configuration](docs/configuration.md)
 
