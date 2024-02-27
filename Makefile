@@ -72,6 +72,7 @@ integration-tests:
 		HAGALL_PRIVATE_KEY_FILE="hagall-private.key" \
 		HAGALL_HDS_ENDPOINT="$$HDS_ADDR" \
 		HAGALL_LOG_LEVEL=debug \
+		HAGALL_HDS_REGISTRATION_INTERVAL=3s \
 		go run ./cmd &
 	@for i in $$(seq 1 5); do echo "Checking Hagall, attempt $$i"; curl --output /dev/null --verbose --fail http://localhost:4000/ready; code=$$?; test "$$code" = 0 && break; sleep 2; done; test "$$code" = 0 || (echo "Timeout when waiting for Hagall"; exit 1)
 	@SCENARIO_NAME=integration-test \
