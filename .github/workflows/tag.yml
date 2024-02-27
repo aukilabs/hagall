@@ -9,10 +9,6 @@ jobs:
   tests:
     name: Tests
     uses: aukilabs/go-tooling/.github/workflows/tests.yml@main
-    with:
-      enable_coverage: false
-      enable_integration_tests: false
-      enable_docker_compose: true
     secrets:
       github_app_id: ${{ secrets.GLOBAL_PUBLIC_GITHUB_APP_ID }}
       github_app_private_key: ${{ secrets.GLOBAL_PUBLIC_GITHUB_APP_PRIVATE_KEY }}
