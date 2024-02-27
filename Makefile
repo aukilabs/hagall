@@ -72,10 +72,11 @@ integration-tests:
 		HAGALL_PRIVATE_KEY_FILE="hagall-private.key" \
 		HAGALL_LOG_LEVEL=debug \
 		HAGALL_HDS_REGISTRATION_INTERVAL=3s \
+		HAGALL_HDS_ENDPOINT="$(HAGALL_HDS_ENDPOINT)" \
 		go run ./cmd &
 	@for i in $$(seq 1 5); do echo "Checking Hagall, attempt $$i"; curl --output /dev/null --verbose --fail http://localhost:4000/ready; code=$$?; test "$$code" = 0 && break; sleep 2; done; test "$$code" = 0 || (echo "Timeout when waiting for Hagall"; exit 1)
 	@SCENARIO_NAME=integration-test \
-		SCENARIO_HDS_ADDR="$$HAGALL_HDS_ENDPOINT" \
+		SCENARIO_HDS_ADDR="$(HAGALL_HDS_ENDPOINT)" \
 		SCENARIO_HAGALL_ADDR="$$TUNNEL_URL" \
 		SCENARIO_LOG_LEVEL=debug \
 		go run github.com/aukilabs/hagall-common/scenariorunner/cmd
