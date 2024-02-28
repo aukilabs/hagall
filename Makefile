@@ -81,5 +81,4 @@ integration-tests:
 		SCENARIO_HAGALL_PUBLIC_ENDPOINT="$$TUNNEL_URL" \
 		SCENARIO_LOG_LEVEL=debug \
 		SCENARIO_INTEGRATION_TEST_TIMEOUT=1s \
-		GOPROXY=direct \
-		go run -mod=mod github.com/aukilabs/hagall-common/scenariorunner/cmd@"feature/PI-203-support-for-hagall-integration-test"
+		go run github.com/aukilabs/hagall-common/scenariorunner/cmd
