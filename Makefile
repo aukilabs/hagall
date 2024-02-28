@@ -68,18 +68,18 @@ integration-tests:
 	@pip3 install -q web3
 	@python3 -c "from web3 import Web3; w3 = Web3(); acc = w3.eth.account.create(); print(f'{w3.to_hex(acc.key)}')" > hagall-private.key
 	@chmod 400 hagall-private.key
-	@HAGALL_PUBLIC_ENDPOINT="$$TUNNEL_URL" \
+	HAGALL_PUBLIC_ENDPOINT="$$TUNNEL_URL" \
 		HAGALL_PRIVATE_KEY_FILE="hagall-private.key" \
 		HAGALL_LOG_LEVEL=debug \
 		HAGALL_HDS_REGISTRATION_INTERVAL=3s \
 		HAGALL_HDS_ENDPOINT="$(HAGALL_HDS_ENDPOINT)" \
 		go run ./cmd &
 	@for i in $$(seq 1 5); do echo "Checking Hagall, attempt $$i"; curl --output /dev/null --verbose --fail http://localhost:4000/ready; code=$$?; test "$$code" = 0 && break; sleep 2; done; test "$$code" = 0 || (echo "Timeout when waiting for Hagall"; exit 1)
-	@[-d hagall-common ] || git clone https://github.com/aukilabs/hagall-common.git || (echo "Failed to clone hagall common"; exit 1)
+	@[ -d hagall-common ] || git clone https://github.com/aukilabs/hagall-common.git || (echo "Failed to clone hagall common"; exit 1)
+	@cd hagall-common && git checkout feature/PI-203-support-for-hagall-integration-test
 	@SCENARIO_NAME=integration-test \
 		SCENARIO_HDS_ADDR="$(HAGALL_HDS_ENDPOINT)" \
-		SCENARIO_HAGALL_ADDR="$$TUNNEL_URL" \
+		SCENARIO_HAGALL_ADDR="http://localhost:4000" \
+		SCENARIO_HAGALL_PUBLIC_ENDPOINT="$$TUNNEL_URL" \
 		SCENARIO_LOG_LEVEL=debug \
-		cd hagall-common && \
-		git checkout feature/PI-203-support-for-hagall-integration-test && \
 		go run github.com/aukilabs/hagall-common/scenariorunner/cmd
