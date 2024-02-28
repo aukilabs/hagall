@@ -82,4 +82,5 @@ integration-tests:
 		SCENARIO_HAGALL_ADDR="http://localhost:4000" \
 		SCENARIO_HAGALL_PUBLIC_ENDPOINT="$$TUNNEL_URL" \
 		SCENARIO_LOG_LEVEL=debug \
+		SCENARIO_INTEGRATION_TEST_TIMEOUT="10s" \
 		go run github.com/aukilabs/hagall-common/scenariorunner/cmd

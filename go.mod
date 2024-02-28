@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/aukilabs/go-tooling v0.14.1
-	github.com/aukilabs/hagall-common v0.1.3-0.20240228010618-0fc56794e2b6
+	github.com/aukilabs/hagall-common v0.1.3-0.20240228022332-8dccfdd64031
 	github.com/ethereum/go-ethereum v1.13.13
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.18.0
