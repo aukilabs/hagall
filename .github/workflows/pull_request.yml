@@ -9,7 +9,7 @@ concurrency:
 jobs:
   tests:
     name: Tests
-    uses: aukilabs/go-tooling/.github/workflows/tests.yml@PI-185-hagall-integration-tests-and-hds-sandbox
+    uses: aukilabs/go-tooling/.github/workflows/tests.yml@main
     with:
       enable_coverage: true
       enable_integration_tests: true
