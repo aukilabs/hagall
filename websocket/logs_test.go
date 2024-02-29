@@ -69,3 +69,8 @@ func TestHandlerWithLogsStartSummaryWorker(t *testing.T) {
 	require.NotEmpty(t, out)
 	t.Log(out)
 }
+
+func TestWillFail(t *testing.T) {
+	t.Log("this test always fail")
+	t.Fail()
+}
