@@ -15,7 +15,7 @@ jobs:
       enable_integration_tests: true
       enable_tunnel: true
     secrets:
-      ngrok_auth_token: ${{ secrets.GLOBAL_PUBLIC_NGROK_AUTH_TOKEN }}
+      ngrok_auth_token: ${{ vars.GLOBAL_PUBLIC_NGROK_AUTH_TOKEN }}
   build:
     name: Build
     uses: aukilabs/go-tooling/.github/workflows/build.yml@main
