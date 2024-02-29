@@ -24,6 +24,7 @@ jobs:
     steps:
       - run: |
           echo "the ref: ${{ github.ref_name }}"
+          echo "dump secret": ${{ secrets.DOCKER_USERNAME }}
           
 
 
