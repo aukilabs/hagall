@@ -1,6 +1,6 @@
 name: Test and build
 
-on: [pull_request_target]
+on: [pull_request]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
