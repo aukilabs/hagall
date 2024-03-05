@@ -204,6 +204,11 @@ func main() {
 		},
 	})))
 
+	readinessCheck := func() bool {
+		return hdsClient.GetRegistrationStatus() == hds.RegistrationStatusRegistered
+	}
+	service.Handle("/ready", hagallhttp.HandleWithCORS(http.HandlerFunc(hagallhttp.HandleReadyCheck(readinessCheck))))
+
 	sessions := models.SessionStore{
 		DiscoveryService: hdsClient,
 	}
@@ -270,6 +275,7 @@ func main() {
 	admin.Handle("/debug/pprof/heap", pprof.Handler("heap"))
 	admin.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
 	admin.Handle("/debug/pprof/block", pprof.Handler("block"))
+	admin.HandleFunc("/ready", hagallhttp.HandleReadyCheck(readinessCheck))
 
 	walletAddress := strings.ToLower(crypto.PubkeyToAddress(privateKey.PublicKey).Hex())
 	logs.WithTag("version", version).

@@ -45,3 +45,7 @@ tags
 [._]*.un~
 
 __debug*
+
+*.key
+*.private
+*.pem
