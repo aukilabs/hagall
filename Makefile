@@ -61,7 +61,7 @@ else
 	@exit 1
 endif
 
-bin/hagall:
+bin/hagall: go-vendor
 	CGO_ENABLED=0 go build -mod vendor -ldflags "-X main.version=${VERSION}" -o ./bin/hagall ./cmd
 
 integration-tests:
