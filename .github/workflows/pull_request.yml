@@ -20,5 +20,4 @@ jobs:
       ngrok_auth_token: "2d2Aaw3F5plm1KRgf10lcPdkJm1_6SdriMf1arLZ9XXW4i5c6"
   build:
     name: Build
-    uses: aukilabs/go-tooling/.github/workflows/build.yml@main
-
+    uses: aukilabs/go-tooling/.github/workflows/build.yml@bug/arm32-builds
