@@ -42,7 +42,7 @@ help: go-build
 test: go-normalize
 	@go test -p 1 ./...
 
-clean: services-stop go-tidy
+clean: go-tidy
 	@-rm -rf bin
 	@-rm -rf vendor
 
