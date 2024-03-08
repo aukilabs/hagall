@@ -42,7 +42,7 @@ help: go-build
 test: go-normalize
 	@go test -p 1 ./...
 
-clean: services-stop go-tidy
+clean: go-tidy
 	@-rm -rf bin
 	@-rm -rf vendor
 
@@ -62,7 +62,7 @@ else
 endif
 
 bin/hagall: go-vendor
-	CGO_ENABLED=0 go build -mod vendor -ldflags "-X main.version=${VERSION}" -o ./bin/hagall ./cmd
+	CGO_ENABLED=0 GOARM="$$(echo "$$arm_version" | cut -c 2-)" go build -mod vendor -ldflags "-X main.version=${VERSION}" -o ./bin/hagall ./cmd
 
 integration-tests:
 	@pip3 install -q web3

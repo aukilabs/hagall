@@ -21,4 +21,3 @@ jobs:
   build:
     name: Build
     uses: aukilabs/go-tooling/.github/workflows/build.yml@main
-
