@@ -291,7 +291,7 @@ func main() {
 	wg.Wait()
 	// unpair on exit
 	if err = hdsClient.Unpair(); err != nil {
-		logs.Error(errors.New("unpair with hds failed").Wrap(err))
+		logs.Warn(errors.New("unpair with hds failed").Wrap(err))
 	}
 }
 

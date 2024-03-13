@@ -24,7 +24,7 @@ func (rh ReceiptHandler) HandleReceipts(ctx context.Context) {
 				return
 			case payload := <-rh.ReceiptChan:
 				if err := rh.VerifyPayload(payload); err != nil {
-					logs.Error(errors.Newf("invalid receipt payload").
+					logs.Warn(errors.Newf("invalid receipt payload").
 						WithTag("receipt", payload.Receipt).
 						WithTag("hash", payload.Hash).
 						WithTag("signature", payload.Signature).
@@ -33,7 +33,6 @@ func (rh ReceiptHandler) HandleReceipts(ctx context.Context) {
 				} else {
 					rh.ForwardToNCS(ctx, payload)
 				}
-
 			}
 		}
 	}()

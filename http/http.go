@@ -15,7 +15,7 @@ func ListenAndServe(ctx context.Context, servers ...*http.Server) {
 
 		for _, s := range servers {
 			if err := s.Shutdown(context.Background()); err != nil {
-				logs.Error(errors.Newf("shutting down the server failed").
+				logs.Warn(errors.Newf("shutting down the server failed").
 					WithTag("addr", s.Addr).
 					Wrap(err))
 			}
@@ -37,7 +37,7 @@ func ListenAndServe(ctx context.Context, servers ...*http.Server) {
 				logs.WithTag("addr", s.Addr).Info("stopping server")
 
 			default:
-				logs.Error(errors.Newf("server stopped").
+				logs.Warn(errors.Newf("server stopped").
 					WithTag("addr", s.Addr).
 					Wrap(err))
 			}
