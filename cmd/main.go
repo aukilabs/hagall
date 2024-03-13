@@ -137,14 +137,12 @@ func main() {
 	}
 
 	if err := validateConfig(conf); err != nil {
-		logs.Error(err)
-		os.Exit(0)
+		logs.Fatal(err)
 	}
 
 	privateKey, err := loadPrivateKey(conf)
 	if err != nil {
-		logs.Error(errors.New("error loading private key").Wrap(err))
-		os.Exit(0)
+		logs.Fatal(errors.New("error loading private key").Wrap(err))
 	}
 
 	logs.SetLevel(logs.ParseLevel(conf.LogLevel))
