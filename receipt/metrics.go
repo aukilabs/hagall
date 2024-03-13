@@ -44,31 +44,40 @@ var (
 	})
 )
 
-func instrumentReceiptLatency(endpoint string, start time.Time) {
+func instrumentReceiptSend(endpoint string, fn func() error) error {
+	start := time.Now()
+
+	err := fn()
+
 	receiptSendLatency.With(prometheus.Labels{
 		ncsEndpointLabel: endpoint,
 	}).Observe(time.Since(start).Seconds())
-}
 
-func instrumentReceiptSend(endpoint string) {
 	receiptSend.With(prometheus.Labels{
 		ncsEndpointLabel: endpoint,
 	}).Inc()
+
+	if err != nil {
+		receiptSendError.
+			With(prometheus.Labels{
+				ncsEndpointLabel: endpoint,
+				errTypeLabel:     errors.Type(err),
+			}).
+			Inc()
+		return err
+	}
+
+	return nil
 }
 
-func instrumentReceiptSendError(endpoint string, err error) {
-	receiptSendError.
-		With(prometheus.Labels{
-			ncsEndpointLabel: endpoint,
-			errTypeLabel:     errors.Type(err),
-		}).
-		Inc()
-}
-
-func instrumentReceiptVerificationError(err error) {
-	receiptVerificationError.
-		With(prometheus.Labels{
-			errTypeLabel: errors.Type(err),
-		}).
-		Inc()
+func instrumentReceiptVerification(fn func() error) error {
+	if err := fn(); err != nil {
+		receiptVerificationError.
+			With(prometheus.Labels{
+				errTypeLabel: errors.Type(err),
+			}).
+			Inc()
+		return err
+	}
+	return nil
 }
