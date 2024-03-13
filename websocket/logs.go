@@ -134,7 +134,7 @@ func (h *handlerWithLogs) Receiver() hwebsocket.Receiver {
 				WithTag(logs.SessionIDTag, h.sessionID).
 				WithTag("session_uuid", h.sessionUUID).
 				WithTag(logs.ParticipantIDTag, h.participantID).
-				Error(errors.New("receiving message failed").Wrap(err))
+				Warn(errors.New("receiving message failed").Wrap(err))
 		} else if err == nil {
 			logs.WithClientID(h.GetClientID()).
 				WithTag(logs.AppKeyTag, h.appKey).
@@ -164,7 +164,7 @@ func (h *handlerWithLogs) Sender() hwebsocket.Sender {
 				WithTag("session_uuid", h.sessionUUID).
 				WithTag(logs.ParticipantIDTag, h.participantID).
 				WithTag("msg_type", msgType).
-				Error(errors.New("sending message failed").Wrap(err))
+				Warn(errors.New("sending message failed").Wrap(err))
 		} else if err == nil {
 			logs.WithClientID(h.GetClientID()).
 				WithTag(logs.AppKeyTag, h.appKey).

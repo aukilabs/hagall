@@ -15,7 +15,7 @@ func VerifyAuthToken(ctx context.Context, hdsClient *hds.Client) func(*websocket
 		token := httpcmn.GetUserTokenFromHTTPRequest(r)
 
 		if err := hdsClient.VerifyUserAuth(token); err != nil {
-			logs.WithClientID(r.Header.Get(httpcmn.HeaderPosemeshClientID)).Error(err)
+			logs.WithClientID(r.Header.Get(httpcmn.HeaderPosemeshClientID)).Warn(err)
 			return err
 		}
 
@@ -28,7 +28,7 @@ func VerifyAuthTokenHandler(hdsClient *hds.Client, next http.HandlerFunc) func(h
 		token := httpcmn.GetUserTokenFromHTTPRequest(r)
 
 		if err := hdsClient.VerifyUserAuth(token); err != nil {
-			logs.WithClientID(r.Header.Get(httpcmn.HeaderPosemeshClientID)).Error(err)
+			logs.WithClientID(r.Header.Get(httpcmn.HeaderPosemeshClientID)).Warn(err)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
