@@ -164,7 +164,7 @@ func (h *handlerWithLogs) Sender() hwebsocket.Sender {
 				WithTag("session_uuid", h.sessionUUID).
 				WithTag(logs.ParticipantIDTag, h.participantID).
 				WithTag("msg_type", msgType).
-				Warn(errors.New("sending message failed").Wrap(err))
+				Error(errors.New("sending message failed").Wrap(err))
 		} else if err == nil {
 			logs.WithClientID(h.GetClientID()).
 				WithTag(logs.AppKeyTag, h.appKey).
