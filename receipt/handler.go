@@ -3,7 +3,6 @@ package receipt
 import (
 	"bytes"
 	"context"
-	"time"
 
 	"github.com/aukilabs/go-tooling/pkg/errors"
 	"github.com/aukilabs/go-tooling/pkg/logs"
@@ -23,17 +22,18 @@ func (rh ReceiptHandler) HandleReceipts(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case payload := <-rh.ReceiptChan:
-				if err := rh.VerifyPayload(payload); err != nil {
-					logs.Error(errors.Newf("invalid receipt payload").
+				if err := instrumentReceiptVerification(func() error {
+					return rh.VerifyPayload(payload)
+				}); err != nil {
+					logs.Warn(errors.Newf("invalid receipt payload").
 						WithTag("receipt", payload.Receipt).
 						WithTag("hash", payload.Hash).
 						WithTag("signature", payload.Signature).
 						Wrap(err))
-					instrumentReceiptVerificationError(err)
+
 				} else {
 					rh.ForwardToNCS(ctx, payload)
 				}
-
 			}
 		}
 	}()
@@ -42,13 +42,11 @@ func (rh ReceiptHandler) HandleReceipts(ctx context.Context) {
 func (rh ReceiptHandler) ForwardToNCS(ctx context.Context, payload ncsclient.ReceiptPayload) {
 	go func() {
 		client := ncsclient.NewNCSClient(rh.NCSEndpoint, nil)
-		start := time.Now()
-		err := client.PostReceipt(ctx, payload)
-		instrumentReceiptLatency(rh.NCSEndpoint, start)
-		if err != nil {
-			instrumentReceiptSendError(rh.NCSEndpoint, err)
-		} else {
-			instrumentReceiptSend(rh.NCSEndpoint)
+
+		if err := instrumentReceiptSend(rh.NCSEndpoint, func() error {
+			return client.PostReceipt(ctx, payload)
+		}); err != nil {
+			logs.Warn(errors.New("forward to network credit service failed").Wrap(err))
 		}
 	}()
 }

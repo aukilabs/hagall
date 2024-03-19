@@ -9,6 +9,7 @@ import (
 
 	"github.com/aukilabs/go-tooling/pkg/errors"
 	"github.com/aukilabs/go-tooling/pkg/logs"
+	httpcmn "github.com/aukilabs/hagall-common/http"
 	hsmoketest "github.com/aukilabs/hagall-common/smoketest"
 )
 
@@ -32,20 +33,21 @@ func HandleSmokeTest(ctx context.Context, opts Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
-			logs.Error(errors.New("reading body failed").Wrap(err))
-			w.WriteHeader(http.StatusInternalServerError)
+			httpcmn.InternalServerError(w, errors.New("reading body failed").Wrap(err))
 			return
 		}
 
 		var req hsmoketest.SmokeTestRequest
 		if err := json.Unmarshal(b, &req); err != nil {
-			logs.Error(errors.New("marshaling request failed").Wrap(err))
-			w.WriteHeader(http.StatusInternalServerError)
+			httpcmn.BadRequest(w, httpcmn.ErrBadRequest)
 			return
 		}
 
 		go func() {
 			defer func() {
+				// if context is of testContext
+				// cancel context on exit to signal function exited
+				// this is used for testing
 				if tctx := ctx.Value(testCtxKeyValue); tctx != nil {
 					testCtx := tctx.(testContext)
 					if testCtx.Cancel != nil {
@@ -53,6 +55,7 @@ func HandleSmokeTest(ctx context.Context, opts Options) http.HandlerFunc {
 					}
 				}
 			}()
+
 			res, err := hsmoketest.RunSmokeTest(ctx, hsmoketest.RunSmokeTestOptions{
 				FromEndpoint:       opts.Endpoint,
 				ToEndpoint:         req.Endpoint,
@@ -61,13 +64,13 @@ func HandleSmokeTest(ctx context.Context, opts Options) http.HandlerFunc {
 				MaxSessionIDLength: req.MaxSessionIDLength,
 			})
 			if err != nil {
-				logs.Error(err)
+				logs.Warn(err)
 			}
 
 			if err := opts.SendResult(ctx, res); err != nil {
 				logs.WithTag("from_endpoint", opts.Endpoint).
 					WithTag("to_endpoint", req.Endpoint).
-					Error(errors.New("sending smoke test result failed").Wrap(err))
+					Warn(errors.New("sending smoke test result failed").Wrap(err))
 			}
 
 		}()
