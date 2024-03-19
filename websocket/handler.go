@@ -23,6 +23,9 @@ type Handler interface {
 	// Handles a ping request.
 	HandlePing(ctx context.Context, respond hwebsocket.ResponseSender, msg hwebsocket.Msg) error
 
+	// Handles a signed ping request.
+	HandleSignedPing(ctx context.Context, respond hwebsocket.ResponseSender, msg hwebsocket.Msg) error
+
 	// Handles a client connection.
 	HandleConnect(conn *websocket.Conn)
 
@@ -283,6 +286,9 @@ func (h *handler) handleMessage(ctx context.Context, msg hwebsocket.Msg, respond
 	switch msg.Type {
 	case hagallpb.MsgType_MSG_TYPE_PING_REQUEST:
 		err = h.Handler.HandlePing(ctx, responder, msg)
+
+	case hagallpb.MsgType_MSG_TYPE_SIGNED_PING_REQUEST:
+		err = h.Handler.HandleSignedPing(ctx, responder, msg)
 
 	case hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST:
 		err = h.Handler.HandleParticipantJoin(ctx,

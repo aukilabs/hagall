@@ -74,6 +74,20 @@ func (h *RealtimeHandler) HandlePing(ctx context.Context, respond hwebsocket.Res
 	return nil
 }
 
+func (h *RealtimeHandler) HandleSignedPing(ctx context.Context, respond hwebsocket.ResponseSender, msg hwebsocket.Msg) error {
+	var req hagallpb.Request
+	if err := msg.DataTo(&req); err != nil {
+		return err
+	}
+
+	respond.Send(&hagallpb.Response{
+		Type:      hagallpb.MsgType_MSG_TYPE_SIGNED_PING_RESPONSE,
+		Timestamp: timestamppb.Now(),
+		RequestId: req.RequestId,
+	})
+	return nil
+}
+
 func (h *RealtimeHandler) HandleParticipantJoin(ctx context.Context, handleFrame func(), respond hwebsocket.ResponseSender, msg hwebsocket.Msg) error {
 	var req hagallpb.ParticipantJoinRequest
 	if err := msg.DataTo(&req); err != nil {
