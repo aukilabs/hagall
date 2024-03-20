@@ -2,6 +2,10 @@ package websocket
 
 import (
 	"context"
+	"github.com/aukilabs/hagall/modules"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"google.golang.org/protobuf/proto"
 	"testing"
 	"time"
 
@@ -49,6 +53,299 @@ func TestHandlerHandlePing(t *testing.T) {
 			scenario.FilterByRequestID(1),
 		).
 		Run(context.Background())
+	require.NoError(t, err)
+}
+
+func TestHandlerHandleSignedLatency(t *testing.T) {
+	sessionStore := &models.SessionStore{
+		DiscoveryService: &testClient{},
+	}
+	privateKey, err := crypto.GenerateKey()
+	require.NoError(t, err)
+	clientA, _, close := NewTestingEnv(t, func() Handler {
+		m := make([]modules.Module, 0)
+		var h Handler = &RealtimeHandler{
+			ClientSyncClockInterval: time.Millisecond * 250,
+			ClientIdleTimeout:       time.Minute,
+			FrameDuration:           time.Millisecond * 50,
+			Sessions:                sessionStore,
+			Modules:                 m,
+			PrivateKey:              privateKey,
+		}
+
+		h = HandlerWithLogs(h, time.Millisecond*100)
+		h = HandlerWithMetrics(h, "https://auki-test.com")
+		return h
+	})
+	defer close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	var tmpRequestID uint32
+
+	err = scenario.NewScenario(clientA).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.ParticipantJoinRequest{
+				Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+				Timestamp: timestamppb.Now(),
+				RequestId: 1,
+			}
+		}).
+		Receive(scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE), func(msg hwebsocket.Msg) error {
+			var res hagallpb.ParticipantJoinResponse
+			err := msg.DataTo(&res)
+			require.NoError(t, err)
+			return err
+		}).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.SignedLatencyRequest{
+				Type:           hagallpb.MsgType_MSG_TYPE_SIGNED_LATENCY_REQUEST,
+				Timestamp:      timestamppb.Now(),
+				RequestId:      2,
+				IterationCount: 3,
+				WalletAddress:  "0x123456789",
+			}
+		}).
+		Receive(
+			scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PING_REQUEST),
+			func(msg hwebsocket.Msg) error {
+				var res hagallpb.Response
+				err := msg.DataTo(&res)
+				require.NoError(t, err)
+				tmpRequestID = res.RequestId
+				return err
+			},
+		).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.Response{
+				Type:      hagallpb.MsgType_MSG_TYPE_PING_RESPONSE,
+				Timestamp: timestamppb.Now(),
+				RequestId: tmpRequestID,
+			}
+		}).
+		Receive(
+			scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PING_REQUEST),
+			func(msg hwebsocket.Msg) error {
+				var res hagallpb.Response
+				err := msg.DataTo(&res)
+				require.NoError(t, err)
+				tmpRequestID = res.RequestId
+				return err
+			},
+		).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.Response{
+				Type:      hagallpb.MsgType_MSG_TYPE_PING_RESPONSE,
+				Timestamp: timestamppb.Now(),
+				RequestId: tmpRequestID,
+			}
+		}).
+		Receive(
+			scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PING_REQUEST),
+			func(msg hwebsocket.Msg) error {
+				var res hagallpb.Response
+				err := msg.DataTo(&res)
+				require.NoError(t, err)
+				tmpRequestID = res.RequestId
+				return err
+			},
+		).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.Response{
+				Type:      hagallpb.MsgType_MSG_TYPE_PING_RESPONSE,
+				Timestamp: timestamppb.Now(),
+				RequestId: tmpRequestID,
+			}
+		}).
+		Receive(
+			scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_SIGNED_LATENCY_RESPONSE),
+			func(msg hwebsocket.Msg) error {
+				var res hagallpb.SignedLatencyResponse
+				err := msg.DataTo(&res)
+				require.NoError(t, err)
+				require.Equal(t, uint32(3), res.Data.IterationCount)
+				require.Equal(t, "0x123456789", res.Data.WalletAddress)
+
+				data, err := proto.Marshal(res.Data)
+
+				publicKeyECDSA, err := crypto.SigToPub(crypto.Keccak256Hash(data).Bytes(), common.FromHex(res.Signature))
+				require.NoError(t, err)
+
+				addr := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
+				publicKey := crypto.PubkeyToAddress(privateKey.PublicKey).Hex()
+
+				require.Equal(t, addr, publicKey)
+
+				return err
+			},
+		).
+		Run(ctx)
+	require.NoError(t, err)
+}
+
+func TestHandlerHandleSignedLatencyWithoutJoining(t *testing.T) {
+	clientA, _, close := NewTestingEnv(t, newTestHandler())
+	defer close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	err := scenario.NewScenario(clientA).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.SignedLatencyRequest{
+				Type:           hagallpb.MsgType_MSG_TYPE_SIGNED_LATENCY_REQUEST,
+				Timestamp:      timestamppb.Now(),
+				RequestId:      1,
+				IterationCount: 10,
+				WalletAddress:  "0x123456789",
+			}
+		}).
+		Receive(
+			scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE),
+			scenario.FilterByRequestID(1),
+			func(msg hwebsocket.Msg) error {
+				var res hagallpb.ErrorResponse
+				err := msg.DataTo(&res)
+				require.NoError(t, err)
+
+				require.Equal(t, hagallpb.ErrorCode_ERROR_CODE_UNAUTHORIZED, res.Code)
+				return err
+			}).
+		Run(ctx)
+	require.NoError(t, err)
+}
+
+func TestHandlerHandleSignedLatencyWithSmallIteration(t *testing.T) {
+	clientA, _, close := NewTestingEnv(t, newTestHandler())
+	defer close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	err := scenario.NewScenario(clientA).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.ParticipantJoinRequest{
+				Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+				Timestamp: timestamppb.Now(),
+				RequestId: 1,
+			}
+		}).
+		Receive(scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE), func(msg hwebsocket.Msg) error {
+			var res hagallpb.ParticipantJoinResponse
+			err := msg.DataTo(&res)
+			require.NoError(t, err)
+			return err
+		}).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.SignedLatencyRequest{
+				Type:           hagallpb.MsgType_MSG_TYPE_SIGNED_LATENCY_REQUEST,
+				Timestamp:      timestamppb.Now(),
+				RequestId:      2,
+				IterationCount: 1,
+				WalletAddress:  "0x123456789",
+			}
+		}).
+		Receive(
+			scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE),
+			scenario.FilterByRequestID(2),
+			func(msg hwebsocket.Msg) error {
+				var res hagallpb.ErrorResponse
+				err := msg.DataTo(&res)
+				require.NoError(t, err)
+
+				require.Equal(t, hagallpb.ErrorCode_ERROR_CODE_BAD_REQUEST, res.Code)
+				return err
+			}).
+		Run(ctx)
+	require.NoError(t, err)
+}
+func TestHandlerHandleSignedLatencyWithBigIteration(t *testing.T) {
+	clientA, _, close := NewTestingEnv(t, newTestHandler())
+	defer close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	err := scenario.NewScenario(clientA).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.ParticipantJoinRequest{
+				Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+				Timestamp: timestamppb.Now(),
+				RequestId: 1,
+			}
+		}).
+		Receive(scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE), func(msg hwebsocket.Msg) error {
+			var res hagallpb.ParticipantJoinResponse
+			err := msg.DataTo(&res)
+			require.NoError(t, err)
+			return err
+		}).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.SignedLatencyRequest{
+				Type:           hagallpb.MsgType_MSG_TYPE_SIGNED_LATENCY_REQUEST,
+				Timestamp:      timestamppb.Now(),
+				RequestId:      2,
+				IterationCount: 100,
+				WalletAddress:  "0x123456789",
+			}
+		}).
+		Receive(
+			scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE),
+			scenario.FilterByRequestID(2),
+			func(msg hwebsocket.Msg) error {
+				var res hagallpb.ErrorResponse
+				err := msg.DataTo(&res)
+				require.NoError(t, err)
+
+				require.Equal(t, hagallpb.ErrorCode_ERROR_CODE_BAD_REQUEST, res.Code)
+				return err
+			}).
+		Run(ctx)
+	require.NoError(t, err)
+}
+
+func TestHandlerHandleSignedLatencyWithoutWallet(t *testing.T) {
+	clientA, _, close := NewTestingEnv(t, newTestHandler())
+	defer close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	err := scenario.NewScenario(clientA).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.ParticipantJoinRequest{
+				Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+				Timestamp: timestamppb.Now(),
+				RequestId: 1,
+			}
+		}).
+		Receive(scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE), func(msg hwebsocket.Msg) error {
+			var res hagallpb.ParticipantJoinResponse
+			err := msg.DataTo(&res)
+			require.NoError(t, err)
+			return err
+		}).
+		Send(func() hwebsocket.ProtoMsg {
+			return &hagallpb.SignedLatencyRequest{
+				Type:           hagallpb.MsgType_MSG_TYPE_SIGNED_LATENCY_REQUEST,
+				Timestamp:      timestamppb.Now(),
+				RequestId:      2,
+				IterationCount: 10,
+			}
+		}).
+		Receive(
+			scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE),
+			scenario.FilterByRequestID(2),
+			func(msg hwebsocket.Msg) error {
+				var res hagallpb.ErrorResponse
+				err := msg.DataTo(&res)
+				require.NoError(t, err)
+
+				require.Equal(t, hagallpb.ErrorCode_ERROR_CODE_BAD_REQUEST, res.Code)
+				return err
+			}).
+		Run(ctx)
 	require.NoError(t, err)
 }
 

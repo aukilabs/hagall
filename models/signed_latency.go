@@ -58,7 +58,7 @@ func (s *SignedLatency) Start(privateKey *ecdsa.PrivateKey, sender hwebsocket.Re
 	})
 }
 
-func (s *SignedLatency) onPing(pingReqID uint32) error {
+func (s *SignedLatency) OnPing(pingReqID uint32) error {
 	if _, ok := s.PingRequests[pingReqID]; !ok {
 		return errors.New("ping request not found")
 	}

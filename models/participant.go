@@ -12,7 +12,7 @@ type Participant struct {
 
 	entityIDs map[uint32]struct{}
 
-	SignedPing *SignedPing
+	SignedLatency *SignedLatency
 }
 
 func (p *Participant) AddEntity(e *Entity) {
