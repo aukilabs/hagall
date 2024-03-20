@@ -74,17 +74,45 @@ func (h *RealtimeHandler) HandlePing(ctx context.Context, respond hwebsocket.Res
 	return nil
 }
 
+func (h *RealtimeHandler) HandlePingResponse(ctx context.Context, respond hwebsocket.ResponseSender, msg hwebsocket.Msg) error {
+	var res hagallpb.Response
+	if err := msg.DataTo(&res); err != nil {
+		return err
+	}
+
+	// TODO
+
+	return nil
+}
+
 func (h *RealtimeHandler) HandleSignedPing(ctx context.Context, respond hwebsocket.ResponseSender, msg hwebsocket.Msg) error {
-	var req hagallpb.Request
+	var req hagallpb.SignedPingRequest
 	if err := msg.DataTo(&req); err != nil {
 		return err
 	}
 
-	respond.Send(&hagallpb.Response{
-		Type:      hagallpb.MsgType_MSG_TYPE_SIGNED_PING_RESPONSE,
-		Timestamp: timestamppb.Now(),
-		RequestId: req.RequestId,
-	})
+	if h.currentParticipant == nil {
+		respond.Send(&hagallpb.ErrorResponse{
+			Type:      hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE,
+			Timestamp: timestamppb.Now(),
+			RequestId: req.RequestId,
+			Code:      hagallpb.ErrorCode_ERROR_CODE_UNAUTHORIZED,
+		})
+		return nil
+	}
+
+	if req.NumberOfIteration < 3 || req.NumberOfIteration > 50 {
+		respond.Send(&hagallpb.ErrorResponse{
+			Type:      hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE,
+			Timestamp: timestamppb.Now(),
+			RequestId: req.RequestId,
+			Code:      hagallpb.ErrorCode_ERROR_CODE_BAD_REQUEST,
+		})
+		return nil
+	}
+
+	// TODO
+
 	return nil
 }
 

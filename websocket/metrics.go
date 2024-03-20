@@ -132,6 +132,12 @@ func (h *handlerWithMetrics) HandlePing(ctx context.Context, sender hwebsocket.R
 	})
 }
 
+func (h *handlerWithMetrics) HandlePingResponse(ctx context.Context, sender hwebsocket.ResponseSender, msg hwebsocket.Msg) error {
+	return h.measureLatency(msg, defaultModule, func() error {
+		return h.Handler.HandlePingResponse(ctx, sender, msg)
+	})
+}
+
 func (h *handlerWithMetrics) HandleSignedPing(ctx context.Context, sender hwebsocket.ResponseSender, msg hwebsocket.Msg) error {
 	return h.measureLatency(msg, defaultModule, func() error {
 		return h.Handler.HandleSignedPing(ctx, sender, msg)

@@ -11,6 +11,8 @@ type Participant struct {
 	Responder hwebsocket.ResponseSender
 
 	entityIDs map[uint32]struct{}
+
+	SignedPing *SignedPing
 }
 
 func (p *Participant) AddEntity(e *Entity) {
