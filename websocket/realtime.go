@@ -3,7 +3,6 @@ package websocket
 import (
 	"context"
 	"crypto/ecdsa"
-	"github.com/aukilabs/go-tooling/pkg/logs"
 	"time"
 
 	"github.com/aukilabs/go-tooling/pkg/errors"
@@ -95,7 +94,6 @@ func (h *RealtimeHandler) HandlePingResponse(ctx context.Context, respond hwebso
 	}
 
 	if err := h.currentParticipant.SignedLatency.OnPing(req.RequestId); err != nil {
-		logs.Error(err)
 		respond.Send(&hagallpb.ErrorResponse{
 			Type:      hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE,
 			Timestamp: timestamppb.Now(),

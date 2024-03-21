@@ -2,6 +2,9 @@ package models
 
 import (
 	"crypto/ecdsa"
+	"sort"
+	"time"
+
 	"github.com/aukilabs/go-tooling/pkg/errors"
 	"github.com/aukilabs/hagall-common/messages/hagallpb"
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
@@ -9,26 +12,19 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"sort"
-	"time"
 )
 
 type SignedLatency struct {
-	RequestID    uint32
-	StartedAt    time.Time
-	Iteration    uint32
-	PingRequests map[uint32]LatencyMetricsData
-	SessionID    string
-	ClientID     string
-	Address      string
+	RequestID     uint32
+	StartedAt     time.Time
+	Iteration     uint32
+	PingRequests  map[uint32]LatencyMetricsData
+	SessionID     string
+	ClientID      string
+	WalletAddress string
 
 	sender     hwebsocket.ResponseSender
 	privateKey *ecdsa.PrivateKey
-
-	Min  float64
-	Max  float64
-	Mean float64
-	P95  float64
 }
 
 type LatencyMetricsData struct {
@@ -36,50 +32,35 @@ type LatencyMetricsData struct {
 	End   time.Time
 }
 
-func (s *SignedLatency) Start(privateKey *ecdsa.PrivateKey, sender hwebsocket.ResponseSender, requestID, Iteration uint32, SessionId, ClientId, Address string) {
+func (s *SignedLatency) Start(privateKey *ecdsa.PrivateKey, sender hwebsocket.ResponseSender, requestID, iteration uint32, sessionID, clientID, walletAddress string) {
 	s.StartedAt = time.Now()
 	s.RequestID = requestID
-	s.Iteration = Iteration
-	s.PingRequests = make(map[uint32]LatencyMetricsData, Iteration)
+	s.Iteration = iteration
+	s.PingRequests = make(map[uint32]LatencyMetricsData, iteration)
 	s.sender = sender
-	s.SessionID = SessionId
-	s.ClientID = ClientId
-	s.Address = Address
+	s.SessionID = sessionID
+	s.ClientID = clientID
+	s.WalletAddress = walletAddress
 	s.privateKey = privateKey
 
-	pingReqID := uint32(time.Now().UnixNano())
-	s.PingRequests[pingReqID] = LatencyMetricsData{
-		Start: time.Now(),
-	}
-	s.sender.Send(&hagallpb.Response{
-		Type:      hagallpb.MsgType_MSG_TYPE_PING_REQUEST,
-		Timestamp: timestamppb.Now(),
-		RequestId: pingReqID,
-	})
+	s.sendPingRequest()
 }
 
 func (s *SignedLatency) OnPing(pingReqID uint32) error {
-	if _, ok := s.PingRequests[pingReqID]; !ok {
+	pingRequest, ok := s.PingRequests[pingReqID]
+	if !ok {
 		return errors.New("ping request not found")
 	}
 
 	s.Iteration--
 	s.PingRequests[pingReqID] = LatencyMetricsData{
-		Start: s.PingRequests[pingReqID].Start,
+		Start: pingRequest.Start,
 		End:   time.Now(),
 	}
 
 	if s.Iteration > 0 {
 		// Send new ping request
-		pingReqID := uint32(time.Now().UnixNano())
-		s.PingRequests[pingReqID] = LatencyMetricsData{
-			Start: time.Now(),
-		}
-		s.sender.Send(&hagallpb.Response{
-			Type:      hagallpb.MsgType_MSG_TYPE_PING_REQUEST,
-			Timestamp: timestamppb.Now(),
-			RequestId: pingReqID,
-		})
+		s.sendPingRequest()
 		return nil
 	}
 
@@ -88,7 +69,7 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 	var latencies []float64
 
 	for _, v := range s.PingRequests {
-		latency := v.End.Sub(v.Start).Seconds()
+		latency := float64(v.End.Sub(v.Start).Milliseconds())
 		latencies = append(latencies, latency)
 		if latency < min || min == 0 {
 			min = latency
@@ -99,6 +80,7 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 		mean += latency
 	}
 	mean = mean / float64(len(s.PingRequests))
+	last = latencies[len(latencies)-1]
 
 	sort.Float64s(latencies)
 	index := int(float64(len(latencies)) * 0.95)
@@ -106,12 +88,10 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 		p95 = latencies[index-1]
 	}
 
-	last = latencies[len(latencies)-1]
-
 	// create a list of ping request ids
-	var pingRequestIds []uint32
+	var pingRequestIDs []uint32
 	for k := range s.PingRequests {
-		pingRequestIds = append(pingRequestIds, k)
+		pingRequestIDs = append(pingRequestIDs, k)
 	}
 
 	latencyData := &hagallpb.LatencyData{
@@ -122,10 +102,10 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 		P95:            p95,
 		Last:           last,
 		IterationCount: uint32(len(s.PingRequests)),
-		PingRequestIds: pingRequestIds,
+		PingRequestIds: pingRequestIDs,
 		SessionId:      s.SessionID,
 		ClientId:       s.ClientID,
-		WalletAddress:  s.Address,
+		WalletAddress:  s.WalletAddress,
 	}
 
 	data, err := proto.Marshal(latencyData)
@@ -145,4 +125,16 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 		Signature: hexutil.Encode(signature),
 	})
 	return nil
+}
+
+func (s *SignedLatency) sendPingRequest() {
+	pingReqID := uint32(time.Now().UnixNano())
+	s.PingRequests[pingReqID] = LatencyMetricsData{
+		Start: time.Now(),
+	}
+	s.sender.Send(&hagallpb.Response{
+		Type:      hagallpb.MsgType_MSG_TYPE_PING_REQUEST,
+		Timestamp: timestamppb.Now(),
+		RequestId: pingReqID,
+	})
 }
