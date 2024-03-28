@@ -1,15 +1,7 @@
 github.com/aukilabs/go-tooling v0.14.2 h1:YAT6nK3ZWtukagYpVKZLW0Td3SYQFc5GjghdRXoaAhY=
 github.com/aukilabs/go-tooling v0.14.2/go.mod h1:lVXOAvEZ+mLnydW7E/gxat7AJDFeZAdsIHs9xS+3/9Q=
-github.com/aukilabs/hagall-common v0.1.6-0.20240319084518-dc297a95357e h1:NHJLkMz+SYlrLrUNWyCZkdxby1CW5+MSwBJm6CnolgI=
-github.com/aukilabs/hagall-common v0.1.6-0.20240319084518-dc297a95357e/go.mod h1:2t7U0u4dqUGit8c5PAEXGfdttggJubi+zI/tOXlQZ3o=
-github.com/aukilabs/hagall-common v0.1.6-0.20240319112636-63aa1429eac7 h1:iMdl7Isdtyvjc6bcSmj+nHoN2FCcDtHR1yeeL81W6CE=
-github.com/aukilabs/hagall-common v0.1.6-0.20240319112636-63aa1429eac7/go.mod h1:2t7U0u4dqUGit8c5PAEXGfdttggJubi+zI/tOXlQZ3o=
-github.com/aukilabs/hagall-common v0.1.6-0.20240320061238-3dcdfb860ae3 h1:6qEOAgM33nAOpH6lmhRuzvGxEgRfVlpMTax0TzjsfeE=
-github.com/aukilabs/hagall-common v0.1.6-0.20240320061238-3dcdfb860ae3/go.mod h1:2t7U0u4dqUGit8c5PAEXGfdttggJubi+zI/tOXlQZ3o=
-github.com/aukilabs/hagall-common v0.1.6-0.20240320061925-5838b2d1477b h1:DTDgtHDH+2Ixqca29JnPl+MwK4yaQ+r/u7dezzaz0YM=
-github.com/aukilabs/hagall-common v0.1.6-0.20240320061925-5838b2d1477b/go.mod h1:2t7U0u4dqUGit8c5PAEXGfdttggJubi+zI/tOXlQZ3o=
-github.com/aukilabs/hagall-common v0.1.6-0.20240320073817-d0b4e5f58df6 h1:18pxCxXXvAO4rID7Gr7xRw+rYGyFkKGUDnslaZhAnyA=
-github.com/aukilabs/hagall-common v0.1.6-0.20240320073817-d0b4e5f58df6/go.mod h1:2t7U0u4dqUGit8c5PAEXGfdttggJubi+zI/tOXlQZ3o=
+github.com/aukilabs/hagall-common v0.1.6 h1:2Dn4QzXx6HoB7QBr/GtVInqO3Unzr7cF9sNw3A70cmU=
+github.com/aukilabs/hagall-common v0.1.6/go.mod h1:2t7U0u4dqUGit8c5PAEXGfdttggJubi+zI/tOXlQZ3o=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/btcsuite/btcd/btcec/v2 v2.3.2 h1:5n0X6hX0Zk+6omWcihdYvdAlGf2DfasC0GMf7DClJ3U=

@@ -2,6 +2,7 @@ package models
 
 import (
 	"crypto/ecdsa"
+	"math"
 	"sort"
 	"time"
 
@@ -65,11 +66,11 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 	}
 
 	// Compute metrics data and send to client
-	var min, max, mean, p95, last float32
-	var latencies []float32
+	var min, max, mean, p95, last float64
+	var latencies []float64
 
 	for _, v := range s.PingRequests {
-		latency := float32(v.End.Sub(v.Start).Milliseconds())
+		latency := float64(v.End.Sub(v.Start).Microseconds())
 		latencies = append(latencies, latency)
 		if latency < min || min == 0 {
 			min = latency
@@ -79,12 +80,10 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 		}
 		mean += latency
 	}
-	mean = mean / float32(len(s.PingRequests))
+	mean = math.Round(mean / float64(len(s.PingRequests)))
 	last = latencies[len(latencies)-1]
 
-	sort.Slice(latencies, func(i, j int) bool {
-		return latencies[i] < latencies[j]
-	})
+	sort.Float64s(latencies)
 
 	index := int(float64(len(latencies)) * 0.95)
 	if index < len(latencies) && index > 0 {
@@ -99,11 +98,11 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 
 	latencyData := &hagallpb.LatencyData{
 		CreatedAt:      timestamppb.Now(),
-		Min:            float64(min),
-		Max:            float64(max),
-		Mean:           float64(mean),
-		P95:            float64(p95),
-		Last:           float64(last),
+		Min:            min,
+		Max:            max,
+		Mean:           mean,
+		P95:            p95,
+		Last:           last,
 		IterationCount: uint32(len(s.PingRequests)),
 		PingRequestIds: pingRequestIDs,
 		SessionId:      s.SessionID,

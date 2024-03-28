@@ -118,6 +118,7 @@ func TestHandlerHandleSignedLatency(t *testing.T) {
 			},
 		).
 		Send(func() hwebsocket.ProtoMsg {
+			time.Sleep(time.Duration(3) * time.Millisecond)
 			return &hagallpb.Response{
 				Type:      hagallpb.MsgType_MSG_TYPE_PING_RESPONSE,
 				Timestamp: timestamppb.Now(),
@@ -135,6 +136,7 @@ func TestHandlerHandleSignedLatency(t *testing.T) {
 			},
 		).
 		Send(func() hwebsocket.ProtoMsg {
+			time.Sleep(time.Duration(1) * time.Millisecond)
 			return &hagallpb.Response{
 				Type:      hagallpb.MsgType_MSG_TYPE_PING_RESPONSE,
 				Timestamp: timestamppb.Now(),
@@ -152,6 +154,7 @@ func TestHandlerHandleSignedLatency(t *testing.T) {
 			},
 		).
 		Send(func() hwebsocket.ProtoMsg {
+			time.Sleep(time.Duration(2) * time.Millisecond)
 			return &hagallpb.Response{
 				Type:      hagallpb.MsgType_MSG_TYPE_PING_RESPONSE,
 				Timestamp: timestamppb.Now(),
@@ -166,6 +169,18 @@ func TestHandlerHandleSignedLatency(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, uint32(3), res.Data.IterationCount)
 				require.Equal(t, "0x123456789", res.Data.WalletAddress)
+
+				t.Log("res.Data.Max: ", res.Data.Max)
+				t.Log("res.Data.Min: ", res.Data.Min)
+				t.Log("res.Data.P95: ", res.Data.P95)
+				t.Log("res.Data.Mean: ", res.Data.Mean)
+				t.Log("res.Data.Last: ", res.Data.Last)
+
+				require.GreaterOrEqual(t, res.Data.Max, float64(3000))
+				require.LessOrEqual(t, res.Data.Min, float64(2000))
+				require.InDelta(t, float64(2500), res.Data.Mean, 500)
+				require.InDelta(t, float64(2500), res.Data.P95, 1000)
+				require.InDelta(t, float64(2500), res.Data.Last, 1000)
 
 				data, err := proto.Marshal(res.Data)
 
