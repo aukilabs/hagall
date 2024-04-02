@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"time"
 
 	"github.com/aukilabs/go-tooling/pkg/errors"
@@ -42,6 +43,8 @@ type RealtimeHandler struct {
 	// channel for sending incoming receipts to ReceiptHandler goroutine
 	ReceiptChan chan ncsclient.ReceiptPayload
 
+	PrivateKey *ecdsa.PrivateKey
+
 	conn               *websocket.Conn
 	currentSession     *models.Session
 	currentParticipant *models.Participant
@@ -71,6 +74,77 @@ func (h *RealtimeHandler) HandlePing(ctx context.Context, respond hwebsocket.Res
 		Timestamp: timestamppb.Now(),
 		RequestId: req.RequestId,
 	})
+	return nil
+}
+
+func (h *RealtimeHandler) HandlePingResponse(ctx context.Context, respond hwebsocket.ResponseSender, msg hwebsocket.Msg) error {
+	var req hagallpb.Response
+	if err := msg.DataTo(&req); err != nil {
+		return err
+	}
+
+	if h.currentParticipant == nil {
+		respond.Send(&hagallpb.ErrorResponse{
+			Type:      hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE,
+			Timestamp: timestamppb.Now(),
+			RequestId: req.RequestId,
+			Code:      hagallpb.ErrorCode_ERROR_CODE_UNAUTHORIZED,
+		})
+		return nil
+	}
+
+	if err := h.currentParticipant.SignedLatency.OnPing(req.RequestId); err != nil {
+		respond.Send(&hagallpb.ErrorResponse{
+			Type:      hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE,
+			Timestamp: timestamppb.Now(),
+			RequestId: req.RequestId,
+			Code:      hagallpb.ErrorCode_ERROR_CODE_INTERNAL_SERVER_ERROR,
+		})
+	}
+
+	return nil
+}
+
+func (h *RealtimeHandler) HandleSignedLatency(ctx context.Context, respond hwebsocket.ResponseSender, msg hwebsocket.Msg) error {
+	var req hagallpb.SignedLatencyRequest
+	if err := msg.DataTo(&req); err != nil {
+		return err
+	}
+
+	if h.currentParticipant == nil {
+		respond.Send(&hagallpb.ErrorResponse{
+			Type:      hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE,
+			Timestamp: timestamppb.Now(),
+			RequestId: req.RequestId,
+			Code:      hagallpb.ErrorCode_ERROR_CODE_UNAUTHORIZED,
+		})
+		return nil
+	}
+
+	if req.IterationCount < 3 || req.IterationCount > 50 {
+		respond.Send(&hagallpb.ErrorResponse{
+			Type:      hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE,
+			Timestamp: timestamppb.Now(),
+			RequestId: req.RequestId,
+			Code:      hagallpb.ErrorCode_ERROR_CODE_BAD_REQUEST,
+		})
+		return nil
+	}
+
+	if req.WalletAddress == "" {
+		respond.Send(&hagallpb.ErrorResponse{
+			Type:      hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE,
+			Timestamp: timestamppb.Now(),
+			RequestId: req.RequestId,
+			Code:      hagallpb.ErrorCode_ERROR_CODE_BAD_REQUEST,
+		})
+		return nil
+
+	}
+
+	h.currentParticipant.SignedLatency.Start(h.PrivateKey, respond, req.RequestId, req.IterationCount,
+		h.currentSession.SessionUUID, h.clientID, req.WalletAddress)
+
 	return nil
 }
 
@@ -121,8 +195,9 @@ func (h *RealtimeHandler) HandleParticipantJoin(ctx context.Context, handleFrame
 	}
 
 	participant := &models.Participant{
-		ID:        session.NewParticipantID(),
-		Responder: respond,
+		ID:            session.NewParticipantID(),
+		Responder:     respond,
+		SignedLatency: &models.SignedLatency{},
 	}
 
 	session.AddParticipant(participant)

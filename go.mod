@@ -4,14 +4,14 @@ go 1.21
 
 require (
 	github.com/aukilabs/go-tooling v0.14.2
-	github.com/aukilabs/hagall-common v0.1.5
+	github.com/aukilabs/hagall-common v0.1.6
 	github.com/ethereum/go-ethereum v1.13.13
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.18.0
 	github.com/segmentio/encoding v0.4.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/net v0.21.0
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require (

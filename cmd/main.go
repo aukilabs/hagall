@@ -235,6 +235,7 @@ func main() {
 				},
 				FeatureFlags: featureflag.New(conf.FeatureFlags),
 				ReceiptChan:  receiptChan,
+				PrivateKey:   privateKey,
 			}
 			h := hwebsocket.HandlerWithLogs(rh, conf.LogSummaryInterval)
 			h = hwebsocket.HandlerWithMetrics(h, conf.PublicEndpoint)
