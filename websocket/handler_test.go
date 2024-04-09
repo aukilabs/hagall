@@ -176,11 +176,11 @@ func TestHandlerHandleSignedLatency(t *testing.T) {
 				t.Log("res.Data.Mean: ", res.Data.Mean)
 				t.Log("res.Data.Last: ", res.Data.Last)
 
-				require.GreaterOrEqual(t, res.Data.Max, float64(3000))
-				require.LessOrEqual(t, res.Data.Min, float64(2000))
-				require.InDelta(t, float64(2500), res.Data.Mean, 500)
-				require.InDelta(t, float64(2500), res.Data.P95, 1000)
-				require.InDelta(t, float64(2500), res.Data.Last, 1000)
+				require.GreaterOrEqual(t, res.Data.Max, float32(3000))
+				require.LessOrEqual(t, res.Data.Min, float32(2000))
+				require.InDelta(t, float32(2500), res.Data.Mean, 500)
+				require.InDelta(t, float32(2500), res.Data.P95, 1000)
+				require.InDelta(t, float32(2500), res.Data.Last, 1000)
 
 				data, err := proto.Marshal(res.Data)
 
