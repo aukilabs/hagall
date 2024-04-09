@@ -66,11 +66,11 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 	}
 
 	// Compute metrics data and send to client
-	var min, max, mean, p95, last float64
-	var latencies []float64
+	var min, max, mean, p95, last float32
+	var latencies []float32
 
 	for _, v := range s.PingRequests {
-		latency := float64(v.End.Sub(v.Start).Microseconds())
+		latency := float32(v.End.Sub(v.Start).Microseconds())
 		latencies = append(latencies, latency)
 		if latency < min || min == 0 {
 			min = latency
@@ -80,12 +80,14 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 		}
 		mean += latency
 	}
-	mean = math.Round(mean / float64(len(s.PingRequests)))
+	mean = float32(math.Round(float64(mean) / float64(len(s.PingRequests))))
 	last = latencies[len(latencies)-1]
 
-	sort.Float64s(latencies)
+	sort.Slice(latencies, func(i, j int) bool {
+		return latencies[i] < latencies[j]
+	})
 
-	index := int(float64(len(latencies)) * 0.95)
+	index := int(float32(len(latencies)) * 0.95)
 	if index < len(latencies) && index > 0 {
 		p95 = latencies[index-1]
 	}
