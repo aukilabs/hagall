@@ -335,6 +335,7 @@ func loadPrivateKey(conf config) (*ecdsa.PrivateKey, error) {
 }
 
 func validateConfig(conf config) error {
+	conf.PublicEndpoint = strings.TrimSpace(conf.PublicEndpoint)
 	if _, err := url.ParseRequestURI(conf.PublicEndpoint); err != nil {
 		return errors.New("invalid public endpoint").Wrap(err)
 	}
