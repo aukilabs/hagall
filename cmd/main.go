@@ -139,6 +139,7 @@ func main() {
 	if err := validateConfig(conf); err != nil {
 		logs.Fatal(err)
 	}
+	conf.PublicEndpoint = strings.TrimSpace(conf.PublicEndpoint)
 
 	privateKey, err := loadPrivateKey(conf)
 	if err != nil {
