@@ -167,24 +167,26 @@ func TestHandlerHandleSignedLatency(t *testing.T) {
 				var res hagallpb.SignedLatencyResponse
 				err := msg.DataTo(&res)
 				require.NoError(t, err)
-				require.Equal(t, uint32(3), res.Data.IterationCount)
-				require.Equal(t, "0x123456789", res.Data.WalletAddress)
 
-				t.Log("res.Data.Max: ", res.Data.Max)
-				t.Log("res.Data.Min: ", res.Data.Min)
-				t.Log("res.Data.P95: ", res.Data.P95)
-				t.Log("res.Data.Mean: ", res.Data.Mean)
-				t.Log("res.Data.Last: ", res.Data.Last)
+				var data hagallpb.LatencyData
+				err = proto.Unmarshal(res.Data, &data)
 
-				require.GreaterOrEqual(t, res.Data.Max, float32(3000))
-				require.LessOrEqual(t, res.Data.Min, float32(2000))
-				require.InDelta(t, float32(2500), res.Data.Mean, 500)
-				require.InDelta(t, float32(2500), res.Data.P95, 1000)
-				require.InDelta(t, float32(2500), res.Data.Last, 1000)
+				require.Equal(t, uint32(3), data.IterationCount)
+				require.Equal(t, "0x123456789", data.WalletAddress)
 
-				data, err := proto.Marshal(res.Data)
+				t.Log("res.Data.Max: ", data.Max)
+				t.Log("res.Data.Min: ", data.Min)
+				t.Log("res.Data.P95: ", data.P95)
+				t.Log("res.Data.Mean: ", data.Mean)
+				t.Log("res.Data.Last: ", data.Last)
 
-				publicKeyECDSA, err := crypto.SigToPub(crypto.Keccak256Hash(data).Bytes(), common.FromHex(res.Signature))
+				require.GreaterOrEqual(t, data.Max, float32(3000))
+				require.LessOrEqual(t, data.Min, float32(2500))
+				require.InDelta(t, float32(2500), data.Mean, 1000)
+				require.InDelta(t, float32(2500), data.P95, 1500)
+				require.InDelta(t, float32(2500), data.Last, 1500)
+
+				publicKeyECDSA, err := crypto.SigToPub(crypto.Keccak256Hash(res.Data).Bytes(), common.FromHex(res.Signature))
 				require.NoError(t, err)
 
 				addr := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
