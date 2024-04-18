@@ -125,7 +125,7 @@ func (s *SignedLatency) OnPing(pingReqID uint32) error {
 		Type:      hagallpb.MsgType_MSG_TYPE_SIGNED_LATENCY_RESPONSE,
 		Timestamp: timestamppb.Now(),
 		RequestId: s.RequestID,
-		Data:      latencyData,
+		Data:      data,
 		Signature: hexutil.Encode(signature),
 	})
 	return nil
