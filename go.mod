@@ -7,7 +7,7 @@ require (
 	github.com/aukilabs/hagall-common v0.1.13
 	github.com/ethereum/go-ethereum v1.14.2
 	github.com/google/uuid v1.6.0
-	github.com/prometheus/client_golang v1.19.0
+	github.com/prometheus/client_golang v1.19.1
 	github.com/segmentio/encoding v0.4.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/net v0.25.0
