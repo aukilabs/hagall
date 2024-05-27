@@ -1,5 +1,5 @@
-github.com/aukilabs/go-tooling v0.14.6 h1:5uuCy5oZXXpjn0lcHA61Q5WX8Jv9I0EnFjhxrLIz6Jw=
-github.com/aukilabs/go-tooling v0.14.6/go.mod h1:EL4JcZQPY4WjjdHt7fjT472RqXbBWx4wj/9klz725X8=
+github.com/aukilabs/go-tooling v0.14.7 h1:dxI6QXMfJy1cBsVj0gmOkShOyWbEWM1rCaIxoCq74nE=
+github.com/aukilabs/go-tooling v0.14.7/go.mod h1:EL4JcZQPY4WjjdHt7fjT472RqXbBWx4wj/9klz725X8=
 github.com/aukilabs/hagall-common v0.1.13 h1:Cv+Pj7roVJp3Ooa/4xnab9X0LMRGc71Y3+VZU0MyA3g=
 github.com/aukilabs/hagall-common v0.1.13/go.mod h1:UUT8Do6iT9WgKn0kiX744JNMyus/G9k5cZXTAT95TWI=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
