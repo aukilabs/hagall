@@ -1,13 +1,13 @@
 # Minimum Requirements
 
-Most modern computers will be able to run Hagall. We have tested on desktops, laptops, servers and Raspberry Pis.
+Most modern computers will be able to run a Relay server. We have tested on desktops, laptops, servers and Raspberry Pis.
 
 - An x86 or ARMv6+ processor
 - At least 64 MiB of RAM
 - At least 20 MiB of disk space
 - A supported operating system, we currently provide pre-compiled binaries for Windows, macOS, Linux, FreeBSD, Solaris as well as Docker images
 
-Additionally, you need this in order to expose Hagall to the Internet:
+Additionally, you need this in order to expose the Relay server to the Internet:
 
 - A web server or reverse proxy which
   - is compatible with HTTPS and WebSockets (HTTP/1.1 or later)
