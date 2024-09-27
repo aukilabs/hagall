@@ -17,6 +17,9 @@ Additionally, you need this in order to expose Hagall to the Internet:
   - at least 10 Mbps downstream and upstream
 - A domain name configured to point to your IP address
 
-You can use our Docker Compose or Kubernetes setup that includes a basic nginx reverse proxy with a Let's Encrypt issued SSL certificate.
+You may be able to get started faster if you have en existing Kubernetes cluster to use
+or you can use our Docker Compose setup that includes a basic nginx reverse proxy with a
+Let's Encrypt-issued SSL certificate. See [Deployment](deployment.md) for more
+information.
 
-Auki's Hagall Discovery Service will perform regular checks on the health of your server to determine if it's fit to serve traffic. Make sure that you have enough spare compute capacity and bandwidth for hosting sessions, or your server might be delisted from the network.
+Auki's Hagall Discovery Service (HDS) and other servers will perform regular checks on the health of your server to determine if it's fit to serve traffic. Make sure that you have enough spare compute capacity and bandwidth for hosting sessions, or your server might be delisted from the network.

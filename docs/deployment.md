@@ -7,14 +7,14 @@
 
 ## Binary
 
-> **_NOTE:_** If you choose to use this deployment method, you need to set up your own HTTPS web server or reverse proxy with an SSL certificate. Hagall listens for incoming connections on port 4000 by default, but this is changeable, see the configuration options above.
+> **_NOTE:_** If you choose to use this deployment method, you need to set up your own HTTPS web server or reverse proxy with an SSL certificate. Hagall listens for incoming connections on port 4000 by default, but this is changeable, see the [configuration options](configuration.md) for details.
 
 ### Currently supported platforms
 
 We build pre-compiled binaries for these operating systems and architectures:
 
 - Windows x86, x86_64
-- macOS x86_64, ARM64 (M1)
+- macOS x86_64, ARM64 (Apple Silicon M series)
 - Linux x86, x86_64, ARM, ARM64
 - FreeBSD x86, x86_64
 - Solaris x86_64
@@ -22,7 +22,7 @@ We build pre-compiled binaries for these operating systems and architectures:
 > **_NOTE:_** Auki Labs doesn't test all of these platforms actively. Windows, FreeBSD and Solaris builds are currently experimental. We don't guarantee that everything works but feel free to reach out with your test results.
 
 1. Download the latest Hagall from [GitHub](https://github.com/aukilabs/hagall/releases).
-2. Generate an Ethereum-compatible wallet and put its private key in a file called `hagall-private.key` like the example above.
+2. Generate an Ethereum-compatible wallet and put its private key in a file called `hagall-private.key` like the example in the [configuration section](configuration.md); alternatively, see this guide on [how to generate a wallet with MetaMask](https://www.posemesh.org/hagall-upgrade-guide).
 3. Run it with `./hagall --public-endpoint=https://hagall.example.com --private-key-file hagall-private.key`
 4. Expose it using your own reverse proxy with an SSL certificate.
 
@@ -75,7 +75,7 @@ Since Hagall needs to be exposed with an HTTPS address and Hagall itself doesn't
 1. Configure your domain name to point to your externally exposed public IP address and configure any firewalls and port forwarding rules to allow incoming traffic to ports 80 and 443.
 2. Download the latest Docker Compose YAML file from [GitHub](https://github.com/aukilabs/hagall/blob/main/docker-compose.yml).
 3. Configure the environment variables to your liking (you must at least set `VIRTUAL_HOST`, `LETSENCRYPT_HOST` and `HAGALL_PUBLIC_ENDPOINT`, set these to the domain name you configured in step 1).
-4. Generate an Ethereum-compatible wallet and put its private key in a file called `hagall-private.key` like in the example above; alternatively, see this guide on [how to generate a wallet with MetaMask](https://www.posemesh.org/hagall-upgrade-guide).
+4. Generate an Ethereum-compatible wallet and put its private key in a file called `hagall-private.key` like the example in the [configuration section](configuration.md); alternatively, see this guide on [how to generate a wallet with MetaMask](https://www.posemesh.org/hagall-upgrade-guide).
 5. With the YAML file in the same folder, start the containers using Docker Compose: `docker-compose up -d`
 
 Just as with the pure Docker setup, we recommend you configure Docker to start automatically with your operating system. If you use our standard Docker Compose YAML file, the containers will start automatically after the Docker daemon has started.
