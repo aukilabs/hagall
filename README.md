@@ -4,7 +4,7 @@
 
 _Hagall means Hail in Old Norse._
 
-Hagall is a Real-Time Networking Server responsible for processing, responding to and broadcasting networking messages to connected clients (participants) in a session similar to how a multiplayer networking engine handles message passing in a first-person-shooter game.
+Hagall, also known as Relay Server, is a Real-Time Networking Server responsible for processing, responding to and broadcasting networking messages to connected clients (participants) in a session similar to how a multiplayer networking engine handles message passing in a first-person-shooter game.
 
 Hagall is, through its module system and Entity Component System, extensible, but at its core, a simple networking engine that manages 3 types of abstractions:
 
