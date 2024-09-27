@@ -1,7 +1,7 @@
-# Contributing to Hagall
+# Contributing to the Relay Server
 
-Welcome, and thank you for considering to contribute to Hagall and related
-library code.
+Welcome and thank you for considering to contribute to the Relay Server
+and related library code.
 
 Please read the following guidelines to ensure the smoothest possible
 experience for both yourself and the Auki Labs developers. Thank you.

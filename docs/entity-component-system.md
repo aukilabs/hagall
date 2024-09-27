@@ -1,4 +1,4 @@
-# Hagall Entity Component System
+# Entity Component System
 
 Hagall Entity Component System (HECS) is a distributed version of an normal Entity Component System (ECS) in a game engine such as Unity.
 
