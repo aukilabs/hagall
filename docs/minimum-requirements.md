@@ -13,7 +13,7 @@ Additionally, you need this in order to expose Hagall to the Internet:
   - is compatible with HTTPS and WebSockets (HTTP/1.1 or later)
   - has an SSL certificate installed
 - A stable Internet connection with
-  - an externally accessible, static public IP address for your reverse proxy to listen to
+  - an externally accessible, static and public IP address for your reverse proxy to listen to
   - at least 10 Mbps downstream and upstream
 - A domain name configured to point to your IP address
 - A [dynamic DNS service](https://en.wikipedia.org/wiki/Dynamic_DNS) if you don't have a static IP address
