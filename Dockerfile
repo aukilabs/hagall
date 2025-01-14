@@ -1,7 +1,7 @@
 ##
 ## Build-time
 ##
-FROM --platform=$BUILDPLATFORM golang:1.21 as build
+FROM --platform=$BUILDPLATFORM golang:1.23 as build
 RUN mkdir -p /app/bin
 WORKDIR /app
 ADD . /app
