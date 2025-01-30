@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/aukilabs/go-tooling v0.16.0
 	github.com/aukilabs/hagall-common v0.2.0
-	github.com/ethereum/go-ethereum v1.14.12
+	github.com/ethereum/go-ethereum v1.14.13
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.20.5
 	github.com/segmentio/encoding v0.4.1
