@@ -103,7 +103,7 @@ func main() {
 		FrameDuration:      time.Millisecond * 15,
 		LogSummaryInterval: time.Minute,
 		HDS: hdsConfig{
-			Endpoint:             "https://hds.posemesh.org",
+			Endpoint:             "https://hds.auki.network",
 			RegistrationInterval: time.Second * 15,
 			HealthCheckTTL:       time.Minute * 2,
 			RegistrationRetries:  3,
