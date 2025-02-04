@@ -5,7 +5,8 @@ After launching the Relay server, it's a good idea to take a look at the logs to
 - "hagall is successfully registered to hds" should show up in the log
 - `"message":"new client is connected","tags":{"app_key":"0xSMOKE"}}` should show up in the log. These are health checks (also known as smoke tests) running from the central Hagall Discovery Service (HDS) to test that the server is working
 - Check metrics like `ws_connected_clients` (see the [Metrics](metrics.md) document for details)
-- Check that the server appears on the posemesh [dashboard](https://dashboard.posemesh.org/servers)
+- Check that the server appears on Auki's posemesh
+  [dashboard](https://dashboard.auki.network/servers)
 
 If registration to HDS fails, check the status code in the log message. The status code is the response from HDS when it tries to call your Hagall server.
 Here are some common issues and solutions:
