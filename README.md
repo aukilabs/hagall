@@ -16,7 +16,7 @@ The core responsibilities of the Relay server are:
 - Addition and deletion of entities.
 - Broadcasting of messages to participants.
 
-Every Relay server needs a unique wallet to participate in the [posemesh economy](https://www.posemesh.org/#economy).
+Every Relay server needs a unique wallet to participate in the [posemesh economy](https://www.aukilabs.com/posemesh/fundamentals).
 
 ## Documentation
 
