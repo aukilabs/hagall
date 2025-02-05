@@ -1,6 +1,6 @@
 TAG ?= $(shell git rev-parse HEAD)
 DOCKER_REGISTRY ?= aukilabs
-HAGALL_HDS_ENDPOINT ?= https://hds-sandbox.posemesh.org
+HAGALL_HDS_ENDPOINT ?= https://hds-sandbox.auki.network
 # 
 # Infra Build
 # 
