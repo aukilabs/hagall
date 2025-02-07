@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/aukilabs/go-tooling/pkg/cli"
+	"github.com/aukilabs/go-tooling/pkg/clockchecker"
 	"github.com/aukilabs/go-tooling/pkg/errors"
 	"github.com/aukilabs/go-tooling/pkg/events"
 	"github.com/aukilabs/go-tooling/pkg/logs"
@@ -186,6 +187,8 @@ func main() {
 		hds.WithDecoder(json.Unmarshal),
 		hds.WithPrivateKey(privateKey),
 	)
+
+	clockchecker.StartSyncMonitor()
 
 	service.HandleFunc("/registrations", hdsClient.HandleServerRegistration)
 	service.Handle("/health", hagallhttp.HandleWithCORS(http.HandlerFunc(hdsClient.HandleHealthCheck)))
