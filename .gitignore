@@ -5,7 +5,6 @@
 *.dll
 *.so
 *.dylib
-data/prometheus/data/*
 bin/
 
 # Test binary, built with `go test -c`
@@ -49,3 +48,5 @@ __debug*
 *.key
 *.private
 *.pem
+privatekey.txt
+data/prometheus/data/*
