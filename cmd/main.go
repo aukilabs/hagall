@@ -60,23 +60,24 @@ var (
 var _ = reflect.TypeOf(config{})
 
 type config struct {
-	Addr               string        `cli:""        env:"HAGALL_ADDR"                  help:"Listening address for client connections."`
-	AdminAddr          string        `cli:""        env:"HAGALL_ADMIN_ADDR"            help:"Admin listening address."`
-	PublicEndpoint     string        `cli:""        env:"HAGALL_PUBLIC_ENDPOINT"       help:"The public endpoint where this Hagall server is reachable."`
-	PrivateKey         string        `cli:""        env:"HAGALL_PRIVATE_KEY"           help:"The private key of a Hagall server-unique Ethereum-compatible wallet."`
-	PrivateKeyFile     string        `cli:""        env:"HAGALL_PRIVATE_KEY_FILE"      help:"The file that contains the private key of a Hagall server-unique Ethereum-compatible wallet."`
-	LogLevel           string        `cli:""        env:"HAGALL_LOG_LEVEL"             help:"Log level (debug|info|warning|error)."`
-	LogIndent          bool          `cli:""        env:"HAGALL_LOG_INDENT"            help:"Indent logs."`
-	SyncClockInterval  time.Duration `cli:",hidden" env:"HAGALL_SYNC_CLOCK_INTERVAL"   help:"Client sync clock (heartbeat) message interval."`
-	ClientIdleTimeout  time.Duration `cli:",hidden" env:"HAGALL_CLIENT_IDLE_TIMEOUT"   help:"Time until an idle client will be disconnected"`
-	FrameDuration      time.Duration `cli:",hidden" env:"HAGALL_FRAME_DURATION"        help:"The duration of a session frame."`
-	LogSummaryInterval time.Duration `cli:",hidden" env:"HAGALL_LOG_SUMMARY_INTERVAL"  help:"The duration between each log summary by connection."`
-	HDS                hdsConfig     `cli:",hidden" env:"-"                            help:"HDS configuration."`
-	Events             eventsConfig  `cli:",hidden" env:"-"                            help:"Event pusher configuration."`
-	FeatureFlags       []string      `cli:",hidden" env:"HAGALL_FEATURE_FLAGS"         help:"Comma separated feature flags"`
-	NCSEndpoint        string        `cli:",hidden" env:"HAGALL_NCS_ENDPOINT"          help:"Network Credit Service Endpoint."`
-	Version            bool          `cli:""        env:"-"                            help:"Show version."`
-	Help               bool          `cli:""        env:"-"                            help:"Show help."`
+	Addr               string             `cli:""        env:"HAGALL_ADDR"                  help:"Listening address for client connections."`
+	AdminAddr          string             `cli:""        env:"HAGALL_ADMIN_ADDR"            help:"Admin listening address."`
+	PublicEndpoint     string             `cli:""        env:"HAGALL_PUBLIC_ENDPOINT"       help:"The public endpoint where this Hagall server is reachable."`
+	PrivateKey         string             `cli:""        env:"HAGALL_PRIVATE_KEY"           help:"The private key of a Hagall server-unique Ethereum-compatible wallet."`
+	PrivateKeyFile     string             `cli:""        env:"HAGALL_PRIVATE_KEY_FILE"      help:"The file that contains the private key of a Hagall server-unique Ethereum-compatible wallet."`
+	LogLevel           string             `cli:""        env:"HAGALL_LOG_LEVEL"             help:"Log level (debug|info|warning|error)."`
+	LogIndent          bool               `cli:""        env:"HAGALL_LOG_INDENT"            help:"Indent logs."`
+	SyncClockInterval  time.Duration      `cli:",hidden" env:"HAGALL_SYNC_CLOCK_INTERVAL"   help:"Client sync clock (heartbeat) message interval."`
+	ClientIdleTimeout  time.Duration      `cli:",hidden" env:"HAGALL_CLIENT_IDLE_TIMEOUT"   help:"Time until an idle client will be disconnected"`
+	FrameDuration      time.Duration      `cli:",hidden" env:"HAGALL_FRAME_DURATION"        help:"The duration of a session frame."`
+	LogSummaryInterval time.Duration      `cli:",hidden" env:"HAGALL_LOG_SUMMARY_INTERVAL"  help:"The duration between each log summary by connection."`
+	HDS                hdsConfig          `cli:",hidden" env:"-"                            help:"HDS configuration."`
+	Events             eventsConfig       `cli:",hidden" env:"-"                            help:"Event pusher configuration."`
+	FeatureFlags       []string           `cli:",hidden" env:"HAGALL_FEATURE_FLAGS"         help:"Comma separated feature flags"`
+	NCSEndpoint        string             `cli:",hidden" env:"HAGALL_NCS_ENDPOINT"          help:"Network Credit Service Endpoint."`
+	Version            bool               `cli:""        env:"-"                            help:"Show version."`
+	Help               bool               `cli:""        env:"-"                            help:"Show help."`
+	ClockChecker       clockCheckerConfig `cli:""        env:"-"                            help:"Clock (time skew) checker configuration."`
 }
 
 type hdsConfig struct {
@@ -91,6 +92,15 @@ type eventsConfig struct {
 	FlushInterval time.Duration `cli:",hidden" env:"HAGALL_EVENTS_FLUSH_INTERVAL" help:"The duration between each event flush."`
 	BatchSize     int           `cli:",hidden" env:"HAGALL_EVENTS_BATCH_SIZE"     help:"The maximum number of events sent at once."`
 	QueueSize     int           `cli:",hidden" env:"HAGALL_EVENTS_QUEUE_SIZE"     help:"The size of the queue where events are stored."`
+}
+
+type clockCheckerConfig struct {
+	InitialDelay     time.Duration `cli:"" env:"HAGALL_CLOCK_CHECKER_INITIAL_DELAY" help:"Initial delay before starting the first check."`
+	SecondCheckDelay time.Duration `cli:"" env:"HAGALL_CLOCK_CHECKER_SECOND_CHECK_DELAY" help:"Delay before starting the second check."`
+	CheckInterval    time.Duration `cli:"" env:"HAGALL_CLOCK_CHECKER_CHECK_INTERVAL" help:"Interval between each subsequent check."`
+	WarningThreshold time.Duration `cli:"" env:"HAGALL_CLOCK_CHECKER_WARNING_THRESHOLD" help:"Time skew warning threshold."`
+	ErrorThreshold   time.Duration `cli:"" env:"HAGALL_CLOCK_CHECKER_ERROR_THRESHOLD" help:"Time skew error threshold."`
+	NTPServerAddress string        `cli:"" env:"HAGALL_CLOCK_CHECKER_NTP_SERVER" help:"NTP server address to use for time skew checking."`
 }
 
 func main() {
@@ -116,6 +126,14 @@ func main() {
 			QueueSize:     events.DefaultQueueSize,
 		},
 		NCSEndpoint: "http://localhost:4040",
+		ClockChecker: clockCheckerConfig{
+			InitialDelay:     clockchecker.DefaultInitialDelay,
+			SecondCheckDelay: clockchecker.DefaultSecondCheckDelay,
+			CheckInterval:    clockchecker.DefaultCheckInterval,
+			WarningThreshold: clockchecker.DefaultWarningThreshold,
+			ErrorThreshold:   clockchecker.DefaultErrorThreshold,
+			NTPServerAddress: clockchecker.DefaultNTPServerAddress,
+		},
 	}
 
 	// set the information gauge to 1, useful for SUM query
@@ -188,7 +206,15 @@ func main() {
 		hds.WithPrivateKey(privateKey),
 	)
 
-	clockchecker.StartSyncMonitor()
+	clockChecker := clockchecker.New(&clockchecker.Options{
+		InitialDelay:     conf.ClockChecker.InitialDelay,
+		SecondCheckDelay: conf.ClockChecker.SecondCheckDelay,
+		CheckInterval:    conf.ClockChecker.CheckInterval,
+		WarningThreshold: conf.ClockChecker.WarningThreshold,
+		ErrorThreshold:   conf.ClockChecker.ErrorThreshold,
+		NTPServerAddress: conf.ClockChecker.NTPServerAddress,
+	})
+	clockChecker.Start(ctx)
 
 	service.HandleFunc("/registrations", hdsClient.HandleServerRegistration)
 	service.Handle("/health", hagallhttp.HandleWithCORS(http.HandlerFunc(hdsClient.HandleHealthCheck)))

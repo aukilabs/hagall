@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.23.4
 
 require (
-	github.com/aukilabs/go-tooling v0.16.0
+	github.com/aukilabs/go-tooling v0.16.2
 	github.com/aukilabs/hagall-common v0.2.1
 	github.com/ethereum/go-ethereum v1.14.13
 	github.com/google/uuid v1.6.0
@@ -17,6 +17,7 @@ require (
 )
 
 require (
+	github.com/beevik/ntp v1.4.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
