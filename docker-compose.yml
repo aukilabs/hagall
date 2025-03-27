@@ -32,7 +32,7 @@ services:
     volumes:
       - './hagall-private.key:/hagall-private.key:ro'
     ports:
-      - 18190:18190
+      - 127.0.0.1:18190:18190
     environment:
       VIRTUAL_HOST: hagall.example.com
       VIRTUAL_PORT: 8080
