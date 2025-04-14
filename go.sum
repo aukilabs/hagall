@@ -1,7 +1,7 @@
 github.com/aukilabs/go-tooling v0.16.2 h1:4Jt8+P+as+xbCZ+RVuqIFirUfgTz+xa5Nr3OKDo2brE=
 github.com/aukilabs/go-tooling v0.16.2/go.mod h1:zmjo3h3YFnAYNyu6jaAwsBw/gE0KwtRQcZWKPHtzjiU=
-github.com/aukilabs/hagall-common v0.2.1 h1:pbMe2vbheXZKrpY3EccMg5vzZ1HyKXboA/5EGnop8TU=
-github.com/aukilabs/hagall-common v0.2.1/go.mod h1:rFknjkpbE/3ET1YD+Z/5zZbQSnBHIhciCrR5IHPq6no=
+github.com/aukilabs/hagall-common v0.2.2 h1:89NLMObiEu+ILoHUOREhhGzAkUPx3t5rBsjD76KH0DA=
+github.com/aukilabs/hagall-common v0.2.2/go.mod h1:rFknjkpbE/3ET1YD+Z/5zZbQSnBHIhciCrR5IHPq6no=
 github.com/beevik/ntp v1.4.3 h1:PlbTvE5NNy4QHmA4Mg57n7mcFTmr1W1j3gcK7L1lqho=
 github.com/beevik/ntp v1.4.3/go.mod h1:Unr8Zg+2dRn7d8bHFuehIMSvvUYssHMxW3Q5Nx4RW5Q=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
