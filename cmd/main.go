@@ -60,24 +60,25 @@ var (
 var _ = reflect.TypeOf(config{})
 
 type config struct {
-	Addr               string             `cli:""        env:"HAGALL_ADDR"                  help:"Listening address for client connections."`
-	AdminAddr          string             `cli:""        env:"HAGALL_ADMIN_ADDR"            help:"Admin listening address."`
-	PublicEndpoint     string             `cli:""        env:"HAGALL_PUBLIC_ENDPOINT"       help:"The public endpoint where this Hagall server is reachable."`
-	PrivateKey         string             `cli:""        env:"HAGALL_PRIVATE_KEY"           help:"The private key of a Hagall server-unique Ethereum-compatible wallet."`
-	PrivateKeyFile     string             `cli:""        env:"HAGALL_PRIVATE_KEY_FILE"      help:"The file that contains the private key of a Hagall server-unique Ethereum-compatible wallet."`
-	LogLevel           string             `cli:""        env:"HAGALL_LOG_LEVEL"             help:"Log level (debug|info|warning|error)."`
-	LogIndent          bool               `cli:""        env:"HAGALL_LOG_INDENT"            help:"Indent logs."`
-	SyncClockInterval  time.Duration      `cli:",hidden" env:"HAGALL_SYNC_CLOCK_INTERVAL"   help:"Client sync clock (heartbeat) message interval."`
-	ClientIdleTimeout  time.Duration      `cli:",hidden" env:"HAGALL_CLIENT_IDLE_TIMEOUT"   help:"Time until an idle client will be disconnected"`
-	FrameDuration      time.Duration      `cli:",hidden" env:"HAGALL_FRAME_DURATION"        help:"The duration of a session frame."`
-	LogSummaryInterval time.Duration      `cli:",hidden" env:"HAGALL_LOG_SUMMARY_INTERVAL"  help:"The duration between each log summary by connection."`
-	HDS                hdsConfig          `cli:",hidden" env:"-"                            help:"HDS configuration."`
-	Events             eventsConfig       `cli:",hidden" env:"-"                            help:"Event pusher configuration."`
-	FeatureFlags       []string           `cli:",hidden" env:"HAGALL_FEATURE_FLAGS"         help:"Comma separated feature flags"`
-	NCSEndpoint        string             `cli:",hidden" env:"HAGALL_NCS_ENDPOINT"          help:"Network Credit Service Endpoint."`
-	Version            bool               `cli:""        env:"-"                            help:"Show version."`
-	Help               bool               `cli:""        env:"-"                            help:"Show help."`
-	ClockChecker       clockCheckerConfig `cli:""        env:"-"                            help:"Clock (time skew) checker configuration."`
+	Addr                 string             `cli:""        env:"HAGALL_ADDR"                    help:"Listening address for client connections."`
+	AdminAddr            string             `cli:""        env:"HAGALL_ADMIN_ADDR"              help:"Admin listening address."`
+	PublicEndpoint       string             `cli:""        env:"HAGALL_PUBLIC_ENDPOINT"         help:"The public endpoint where this Hagall server is reachable."`
+	PrivateKey           string             `cli:""        env:"HAGALL_PRIVATE_KEY"             help:"The private key of a Hagall server-unique Ethereum-compatible wallet."`
+	PrivateKeyFile       string             `cli:""        env:"HAGALL_PRIVATE_KEY_FILE"        help:"The file that contains the private key of a Hagall server-unique Ethereum-compatible wallet."`
+	LogLevel             string             `cli:""        env:"HAGALL_LOG_LEVEL"               help:"Log level (debug|info|warning|error)."`
+	LogIndent            bool               `cli:""        env:"HAGALL_LOG_INDENT"              help:"Indent logs."`
+	SyncClockInterval    time.Duration      `cli:",hidden" env:"HAGALL_SYNC_CLOCK_INTERVAL"     help:"Client sync clock (heartbeat) message interval."`
+	ClientIdleTimeout    time.Duration      `cli:",hidden" env:"HAGALL_CLIENT_IDLE_TIMEOUT"     help:"Time until an idle client will be disconnected"`
+	FrameDuration        time.Duration      `cli:",hidden" env:"HAGALL_FRAME_DURATION"          help:"The duration of a session frame."`
+	LogSummaryInterval   time.Duration      `cli:",hidden" env:"HAGALL_LOG_SUMMARY_INTERVAL"    help:"The duration between each log summary by connection."`
+	CustomMessageMaxSize int                `cli:",hidden" env:"HAGALL_CUSTOM_MESSAGE_MAX_SIZE" help:"Maximum custom message body size in bytes."`
+	HDS                  hdsConfig          `cli:",hidden" env:"-"                              help:"HDS configuration."`
+	Events               eventsConfig       `cli:",hidden" env:"-"                              help:"Event pusher configuration."`
+	FeatureFlags         []string           `cli:",hidden" env:"HAGALL_FEATURE_FLAGS"           help:"Comma separated feature flags"`
+	NCSEndpoint          string             `cli:",hidden" env:"HAGALL_NCS_ENDPOINT"            help:"Network Credit Service Endpoint."`
+	Version              bool               `cli:""        env:"-"                              help:"Show version."`
+	Help                 bool               `cli:""        env:"-"                              help:"Show help."`
+	ClockChecker         clockCheckerConfig `cli:""        env:"-"                              help:"Clock (time skew) checker configuration."`
 }
 
 type hdsConfig struct {
@@ -105,14 +106,15 @@ type clockCheckerConfig struct {
 
 func main() {
 	conf := config{
-		Addr:               ":4000",
-		AdminAddr:          ":18190",
-		PublicEndpoint:     "http://localhost:4000",
-		LogLevel:           logs.InfoLevel.String(),
-		SyncClockInterval:  time.Second * 5,
-		ClientIdleTimeout:  time.Minute * 5,
-		FrameDuration:      time.Millisecond * 15,
-		LogSummaryInterval: time.Minute,
+		Addr:                 ":4000",
+		AdminAddr:            ":18190",
+		PublicEndpoint:       "http://localhost:4000",
+		LogLevel:             logs.InfoLevel.String(),
+		SyncClockInterval:    time.Second * 5,
+		ClientIdleTimeout:    time.Minute * 5,
+		FrameDuration:        time.Millisecond * 15,
+		LogSummaryInterval:   time.Minute,
+		CustomMessageMaxSize: 256 * 1024,
 		HDS: hdsConfig{
 			Endpoint:             "https://hds.auki.network",
 			RegistrationInterval: time.Second * 15,
@@ -263,9 +265,10 @@ func main() {
 					&odal.Module{},
 					&dagaz.Module{},
 				},
-				FeatureFlags: featureflag.New(conf.FeatureFlags),
-				ReceiptChan:  receiptChan,
-				PrivateKey:   privateKey,
+				FeatureFlags:         featureflag.New(conf.FeatureFlags),
+				CustomMessageMaxSize: conf.CustomMessageMaxSize,
+				ReceiptChan:          receiptChan,
+				PrivateKey:           privateKey,
 			}
 			h := hwebsocket.HandlerWithLogs(rh, conf.LogSummaryInterval)
 			h = hwebsocket.HandlerWithMetrics(h, conf.PublicEndpoint)

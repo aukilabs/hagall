@@ -10,6 +10,7 @@ const (
 	FlagDisableEntityDeleteBroadcast          Flag = "DISABLE_ENTITY_DELETE_BROADCAST"
 	FlagDisableEntityUpdatePoseBroadcast      Flag = "DISABLE_ENTITY_UPDATE_POSE_BROADCAST"
 	FlagDisableCustomMessageBroadcast         Flag = "DISABLE_CUSTOM_MESSAGE_BROADCAST"
+	FlagDisableRosTopicRelay                  Flag = "DISABLE_ROS_TOPIC_RELAY"
 	FlagDisableEntityComponentAddBroadcast    Flag = "DISABLE_ENTITY_COMPONENT_ADD_BROADCAST"
 	FlagDisableEntityComponentUpdateBroadcast Flag = "DISABLE_ENTITY_COMPONENT_UPDATE_BROADCAST"
 	FlagDisableEntityComponentDeleteBroadcast Flag = "DISABLE_ENTITY_COMPONENT_DELETE_BROADCAST"

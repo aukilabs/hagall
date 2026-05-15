@@ -3,6 +3,7 @@ package websocket
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"time"
 
 	"github.com/aukilabs/go-tooling/pkg/errors"
@@ -17,7 +18,27 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const customMessageMaxSize = 10240
+const (
+	customMessageMaxSize        = 10240
+	defaultCustomMessageMaxSize = 256 * 1024
+)
+
+type rosTopicRelayEnvelope struct {
+	Topic          string          `json:"topic"`
+	RosMessageType string          `json:"ros_message_type"`
+	Payload        json.RawMessage `json:"payload"`
+}
+
+func isRosTopicRelayEnvelope(body []byte) bool {
+	var envelope rosTopicRelayEnvelope
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return false
+	}
+
+	return envelope.Topic != "" &&
+		envelope.RosMessageType != "" &&
+		envelope.Payload != nil
+}
 
 // RealtimeHandler represents a service that manages multiple client connections
 // and relays their actions in realtime.
@@ -39,6 +60,8 @@ type RealtimeHandler struct {
 	Modules []modules.Module
 
 	FeatureFlags featureflag.FeatureFlag
+
+	CustomMessageMaxSize int
 
 	// channel for sending incoming receipts to ReceiptHandler goroutine
 	ReceiptChan chan ncsclient.ReceiptPayload
@@ -423,12 +446,22 @@ func (h *RealtimeHandler) HandleCustomMessage(ctx context.Context, respond hwebs
 			WithTag("msg_type", msg.Type)
 	}
 
-	if len(customMessage.Body) > customMessageMaxSize {
+	maxSize := h.CustomMessageMaxSize
+	if maxSize == 0 {
+		maxSize = defaultCustomMessageMaxSize
+	}
+
+	if len(customMessage.Body) > maxSize {
 		respond.Send(&hagallpb.ErrorResponse{
 			Type:      hagallpb.MsgType_MSG_TYPE_ERROR_RESPONSE,
 			Timestamp: timestamppb.Now(),
 			Code:      hagallpb.ErrorCode_ERROR_CODE_TOO_LARGE,
 		})
+		return nil
+	}
+
+	if _, disabled := h.FeatureFlags[featureflag.FlagDisableRosTopicRelay]; disabled &&
+		isRosTopicRelayEnvelope(customMessage.Body) {
 		return nil
 	}
 

@@ -2,10 +2,6 @@ package websocket
 
 import (
 	"context"
-	"github.com/aukilabs/hagall/modules"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"google.golang.org/protobuf/proto"
 	"testing"
 	"time"
 
@@ -14,8 +10,12 @@ import (
 	hwebsocket "github.com/aukilabs/hagall-common/websocket"
 	"github.com/aukilabs/hagall/featureflag"
 	"github.com/aukilabs/hagall/models"
+	"github.com/aukilabs/hagall/modules"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -1650,8 +1650,24 @@ func TestHandleCustomMessage(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("message larger than 10 kB are rejected with error", func(t *testing.T) {
-		clientA, clientB, close := NewTestingEnv(t, newTestHandler())
+	t.Run("message larger than the configured limit is rejected with error", func(t *testing.T) {
+		sessionStore := &models.SessionStore{
+			DiscoveryService: &testClient{},
+		}
+		newHandler := func() Handler {
+			var h Handler = &RealtimeHandler{
+				ClientSyncClockInterval: time.Millisecond * 250,
+				ClientIdleTimeout:       time.Minute,
+				FrameDuration:           time.Millisecond * 50,
+				Sessions:                sessionStore,
+				CustomMessageMaxSize:    customMessageMaxSize,
+			}
+
+			h = HandlerWithLogs(h, time.Millisecond*100)
+			h = HandlerWithMetrics(h, "https://auki-test.com")
+			return h
+		}
+		clientA, clientB, close := NewTestingEnv(t, newHandler)
 		defer close()
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
@@ -1735,6 +1751,298 @@ func TestHandleCustomMessage(t *testing.T) {
 				scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_CUSTOM_MESSAGE_BROADCAST),
 			).
 			Run(ctx)
+		require.Error(t, err)
+	})
+
+	t.Run("default limit accepts ros topic sized custom messages", func(t *testing.T) {
+		clientA, clientB, close := NewTestingEnv(t, newTestHandler())
+		defer close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		var sessionID string
+
+		err := scenario.NewScenario(clientA).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.ParticipantJoinRequest{
+					Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+					Timestamp: timestamppb.Now(),
+					RequestId: 1,
+				}
+			}).
+			Receive(scenario.FilterByType(
+				hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE),
+				func(msg hwebsocket.Msg) error {
+					var res hagallpb.ParticipantJoinResponse
+					err := msg.DataTo(&res)
+					require.NoError(t, err)
+
+					sessionID = res.SessionId
+					return err
+				},
+			).
+			Run(ctx)
+		require.NoError(t, err)
+
+		body := make([]byte, customMessageMaxSize+1)
+
+		err = scenario.NewScenario(clientB).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.ParticipantJoinRequest{
+					Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+					Timestamp: timestamppb.Now(),
+					RequestId: 2,
+					SessionId: sessionID,
+				}
+			}).
+			Receive(
+				scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE),
+			).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.CustomMessage{
+					Type:      hagallpb.MsgType_MSG_TYPE_CUSTOM_MESSAGE,
+					Timestamp: timestamppb.Now(),
+					Body:      body,
+				}
+			}).
+			Run(ctx)
+		require.NoError(t, err)
+
+		err = scenario.NewScenario(clientA).
+			Receive(
+				scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_CUSTOM_MESSAGE_BROADCAST),
+				func(msg hwebsocket.Msg) error {
+					var bc hagallpb.CustomMessageBroadcast
+					err := msg.DataTo(&bc)
+					require.NoError(t, err)
+					require.Len(t, bc.Body, customMessageMaxSize+1)
+					return err
+				},
+			).
+			Run(ctx)
+		require.NoError(t, err)
+	})
+
+	t.Run("ros topic relay feature flag disables ros envelope delivery", func(t *testing.T) {
+		sessionStore := &models.SessionStore{
+			DiscoveryService: &testClient{},
+		}
+		newHandler := func() Handler {
+			var h Handler = &RealtimeHandler{
+				ClientSyncClockInterval: time.Millisecond * 250,
+				ClientIdleTimeout:       time.Minute,
+				FrameDuration:           time.Millisecond * 50,
+				Sessions:                sessionStore,
+				FeatureFlags:            featureflag.New([]string{string(featureflag.FlagDisableRosTopicRelay)}),
+			}
+
+			h = HandlerWithLogs(h, time.Millisecond*100)
+			h = HandlerWithMetrics(h, "https://auki-test.com")
+			return h
+		}
+		clientA, clientB, close := NewTestingEnv(t, newHandler)
+		defer close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		var sessionID string
+
+		err := scenario.NewScenario(clientA).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.ParticipantJoinRequest{
+					Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+					Timestamp: timestamppb.Now(),
+					RequestId: 1,
+				}
+			}).
+			Receive(scenario.FilterByType(
+				hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE),
+				func(msg hwebsocket.Msg) error {
+					var res hagallpb.ParticipantJoinResponse
+					err := msg.DataTo(&res)
+					require.NoError(t, err)
+
+					sessionID = res.SessionId
+					return err
+				},
+			).
+			Run(ctx)
+		require.NoError(t, err)
+
+		err = scenario.NewScenario(clientB).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.ParticipantJoinRequest{
+					Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+					Timestamp: timestamppb.Now(),
+					RequestId: 2,
+					SessionId: sessionID,
+				}
+			}).
+			Receive(
+				scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE),
+			).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.CustomMessage{
+					Type:      hagallpb.MsgType_MSG_TYPE_CUSTOM_MESSAGE,
+					Timestamp: timestamppb.Now(),
+					Body: []byte(`{
+						"topic": "/cmd_vel",
+						"ros_message_type": "geometry_msgs/msg/Twist",
+						"payload": "AAAA"
+					}`),
+				}
+			}).
+			Run(ctx)
+		require.NoError(t, err)
+
+		ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), time.Millisecond*100)
+		defer cancelTimeout()
+
+		err = scenario.NewScenario(clientA).
+			Receive(scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_CUSTOM_MESSAGE_BROADCAST)).
+			Run(ctxTimeout)
+		require.Error(t, err)
+	})
+
+	t.Run("ros topic relay feature flag does not disable generic custom messages", func(t *testing.T) {
+		sessionStore := &models.SessionStore{
+			DiscoveryService: &testClient{},
+		}
+		newHandler := func() Handler {
+			var h Handler = &RealtimeHandler{
+				ClientSyncClockInterval: time.Millisecond * 250,
+				ClientIdleTimeout:       time.Minute,
+				FrameDuration:           time.Millisecond * 50,
+				Sessions:                sessionStore,
+				FeatureFlags:            featureflag.New([]string{string(featureflag.FlagDisableRosTopicRelay)}),
+			}
+
+			h = HandlerWithLogs(h, time.Millisecond*100)
+			h = HandlerWithMetrics(h, "https://auki-test.com")
+			return h
+		}
+		clientA, clientB, close := NewTestingEnv(t, newHandler)
+		defer close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		var sessionID string
+		body := []byte("regular-custom-message")
+
+		err := scenario.NewScenario(clientA).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.ParticipantJoinRequest{
+					Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+					Timestamp: timestamppb.Now(),
+					RequestId: 1,
+				}
+			}).
+			Receive(scenario.FilterByType(
+				hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE),
+				func(msg hwebsocket.Msg) error {
+					var res hagallpb.ParticipantJoinResponse
+					err := msg.DataTo(&res)
+					require.NoError(t, err)
+
+					sessionID = res.SessionId
+					return err
+				},
+			).
+			Run(ctx)
+		require.NoError(t, err)
+
+		err = scenario.NewScenario(clientB).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.ParticipantJoinRequest{
+					Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+					Timestamp: timestamppb.Now(),
+					RequestId: 2,
+					SessionId: sessionID,
+				}
+			}).
+			Receive(
+				scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE),
+			).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.CustomMessage{
+					Type:      hagallpb.MsgType_MSG_TYPE_CUSTOM_MESSAGE,
+					Timestamp: timestamppb.Now(),
+					Body:      body,
+				}
+			}).
+			Run(ctx)
+		require.NoError(t, err)
+
+		err = scenario.NewScenario(clientA).
+			Receive(
+				scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_CUSTOM_MESSAGE_BROADCAST),
+				func(msg hwebsocket.Msg) error {
+					var bc hagallpb.CustomMessageBroadcast
+					err := msg.DataTo(&bc)
+					require.NoError(t, err)
+					require.Equal(t, body, bc.Body)
+					return err
+				},
+			).
+			Run(ctx)
+		require.NoError(t, err)
+	})
+
+	t.Run("custom messages stay isolated between sessions", func(t *testing.T) {
+		clientA, clientB, close := NewTestingEnv(t, newTestHandler())
+		defer close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		err := scenario.NewScenario(clientA).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.ParticipantJoinRequest{
+					Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+					Timestamp: timestamppb.Now(),
+					RequestId: 1,
+				}
+			}).
+			Receive(scenario.FilterByType(
+				hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE),
+			).
+			Run(ctx)
+		require.NoError(t, err)
+
+		err = scenario.NewScenario(clientB).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.ParticipantJoinRequest{
+					Type:      hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_REQUEST,
+					Timestamp: timestamppb.Now(),
+					RequestId: 2,
+				}
+			}).
+			Receive(
+				scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_PARTICIPANT_JOIN_RESPONSE),
+			).
+			Run(ctx)
+		require.NoError(t, err)
+
+		err = scenario.NewScenario(clientA).
+			Send(func() hwebsocket.ProtoMsg {
+				return &hagallpb.CustomMessage{
+					Type:      hagallpb.MsgType_MSG_TYPE_CUSTOM_MESSAGE,
+					Timestamp: timestamppb.Now(),
+					Body:      []byte("session-a-message"),
+				}
+			}).
+			Run(ctx)
+		require.NoError(t, err)
+
+		ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), time.Millisecond*100)
+		defer cancelTimeout()
+
+		err = scenario.NewScenario(clientB).
+			Receive(scenario.FilterByType(hagallpb.MsgType_MSG_TYPE_CUSTOM_MESSAGE_BROADCAST)).
+			Run(ctxTimeout)
 		require.Error(t, err)
 	})
 
