@@ -32,6 +32,7 @@ import (
 	"github.com/aukilabs/hagall/modules"
 	"github.com/aukilabs/hagall/modules/dagaz"
 	"github.com/aukilabs/hagall/modules/odal"
+	"github.com/aukilabs/hagall/modules/rosrelay"
 	"github.com/aukilabs/hagall/modules/vikja"
 	"github.com/aukilabs/hagall/receipt"
 	"github.com/aukilabs/hagall/smoketest"
@@ -253,6 +254,7 @@ func main() {
 		Handler: func(conn *websocket.Conn) {
 			defer conn.Close()
 
+			ff := featureflag.New(conf.FeatureFlags)
 			var rh hwebsocket.Handler = &hwebsocket.RealtimeHandler{
 				ClientSyncClockInterval: conf.SyncClockInterval,
 				ClientIdleTimeout:       conf.ClientIdleTimeout,
@@ -262,8 +264,9 @@ func main() {
 					&vikja.Module{},
 					&odal.Module{},
 					&dagaz.Module{},
+					rosrelay.NewModule(ff),
 				},
-				FeatureFlags: featureflag.New(conf.FeatureFlags),
+				FeatureFlags: ff,
 				ReceiptChan:  receiptChan,
 				PrivateKey:   privateKey,
 			}
@@ -337,6 +340,7 @@ func pairWithHDS(ctx context.Context, c *hds.Client, conf config) error {
 			(&vikja.Module{}).Name(),
 			(&odal.Module{}).Name(),
 			(&dagaz.Module{}).Name(),
+			"rosrelay",
 		},
 		FeatureFlags: conf.FeatureFlags,
 	})

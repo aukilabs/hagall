@@ -29,4 +29,5 @@ Every Relay server needs a unique wallet to participate in the [posemesh economy
 - [Entity Component System](docs/entity-component-system.md)
 - [Metrics](docs/metrics.md)
 - [Configuration](docs/configuration.md)
+- [ROS2 Topic Relay](docs/ros-topic-relay.md)
 
