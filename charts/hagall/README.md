@@ -17,7 +17,8 @@ helm template hagall charts/hagall --namespace default \
   -f charts/hagall/values.dev.yaml -f /path/to/infrastructure-values.yaml
 ```
 
-`make chart-deps` builds the dependency from the committed `Chart.lock`.
+`make chart-deps` registers the Auki chart repository and builds the dependency
+from the committed `Chart.lock`.
 `ci/values.yaml` contains rendering fixtures, not runtime credentials. When
 upgrading the dependency, update `Chart.yaml` and regenerate `Chart.lock` with
 `helm dependency update charts/hagall` after the package has been published.

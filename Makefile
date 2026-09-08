@@ -22,6 +22,7 @@ go-vendor:
 
 .PHONY: chart-deps chart-check
 chart-deps:
+	helm repo add auki https://charts.aukiverse.com --force-update
 	helm dependency build charts/hagall
 
 chart-check:
