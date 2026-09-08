@@ -1,12 +1,13 @@
-# Keep the prototype's resource names and selector when Argo adopts it.
-fullnameOverride: auki-relay-node
+hagall:
+  # Keep the prototype's resource names and selector when Argo adopts it.
+  fullnameOverride: auki-relay-node
 
-relay:
-  capacity: 128
-  acceptBookings: true
-  authConcurrency: 128
-  authAttemptsPerIP: 128
-  authAttemptsPerPeer: 128
+  relay:
+    capacity: 128
+    acceptBookings: true
+    authConcurrency: 128
+    authAttemptsPerIP: 128
+    authAttemptsPerPeer: 128
 
-podMonitor:
-  enabled: true
+  podMonitor:
+    enabled: true

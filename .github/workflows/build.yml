@@ -53,7 +53,7 @@ jobs:
         with:
           version: v3.18.3
       - name: Validate Helm chart
-        run: make chart-check
+        run: make chart-deps chart-check
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:

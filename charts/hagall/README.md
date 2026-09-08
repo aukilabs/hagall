@@ -1,44 +1,38 @@
-# Hagall relay chart
+# Hagall deployment wrapper
 
-This chart runs a standalone relay behind an AWS Load Balancer Controller NLB.
-Argo CD renders the chart from this repository; it does not need a chart registry.
+This chart pins `hagall` version **1.0.0** from `https://charts.aukiverse.com`.
+Templates, defaults, schema, and operator instructions are maintained in
+[aukilabs/helm-charts](https://github.com/aukilabs/helm-charts/tree/main/charts/hagall).
+This repository supplies the wrapper and dev defaults used by Argo CD.
 
-Supply `relay.ddsUrl`, `relay.ddsPublicKeyUrl`, `relay.dmsUrl`, `relay.publicHost`,
-`relay.peerId`, `identity.existingSecret`, `service.public.subnetIds`, and
-`service.public.certificateArn` through infrastructure values. Use `image.digest`
-to pin a published image. `image.tag` defaults to the chart's application version
-when no digest is supplied.
-
-The existing Secret must contain these file keys:
-
-| Key | File content |
-| --- | --- |
-| `registration-credentials` | Base64 text encoding the DDS node UUID and secret, separated by `:` |
-| `wallet-private-key` | Trimmed secp256k1 private-key hex |
-| `libp2p-private-key` | Binary go-libp2p Ed25519 private key |
-
-The init container copies the projected files into a memory-backed volume with
-mode `0600`, owned by UID/GID `10001`. The runtime mounts that volume read-only.
-Keep these same identities across restarts; do not generate keys in the chart.
-
-Only zero or one replica is allowed. The Deployment uses `Recreate` to prevent
-two pods from using the same identity. SIGTERM allows `relay.shutdownDrainSeconds`
-for draining, with an additional 30 seconds in the pod termination grace period.
-
-The public Service exposes raw TCP on port `443` and TLS-terminated WebSocket on
-port `4443`, forwarded to relay ports `4001` and `4002`. The controller owns the
-NLB and target groups. Keep Service names, selectors, ports, and load balancer
-class stable when adopting an existing deployment. Admin port `9090` and metrics
-port `9091` are ClusterIP-only; the optional PodMonitor scrapes the metrics port.
-
-`values.dev.yaml` preserves the prototype's `auki-relay-node` resource names,
-capacity of 128, admission settings, and enabled booking gate. Environment
-endpoints, certificate, subnets, Peer ID, and image digest are supplied separately.
+All overrides are nested under `hagall:`. `values.dev.yaml` preserves the
+`auki-relay-node` resource names and selector, capacity of 128, admission limits,
+and enabled booking gate. Infrastructure supplies the existing identity Secret,
+DDS/DMS endpoints, public host, Peer ID, image digest, certificate, and subnets.
 
 ```sh
+make chart-deps
 make chart-check
 helm template hagall charts/hagall --namespace default \
   -f charts/hagall/values.dev.yaml -f /path/to/infrastructure-values.yaml
 ```
 
-The `ci/values.yaml` file contains rendering fixtures, not deployment settings.
+`make chart-deps` builds the dependency from the committed `Chart.lock`.
+`ci/values.yaml` contains rendering fixtures, not runtime credentials. When
+upgrading the dependency, update `Chart.yaml` and regenerate `Chart.lock` with
+`helm dependency update charts/hagall` after the package has been published.
+
+## First release of this wrapper
+
+1. Merge and publish `hagall` 1.0.0 from helm-charts.
+2. Run the wrapper CI checks and merge this wrapper in Hagall.
+3. Tag that merged commit `chart-v1.0.0`.
+4. Set `hagall_relay.chart_revision = "chart-v1.0.0"` and
+   `hagall_relay.use_wrapper_chart = true` in Terraform live configuration.
+5. Apply and sync the Hagall Application through the existing scoped procedure.
+
+The Terraform wrapper option nests infrastructure overrides under `hagall:`.
+Its default remains false for the earlier standalone chart. Keep the Helm
+release name, namespace, resource names, image digest, identity Secret, and
+network settings when switching. Chart-version labels change; the relay
+configuration is preserved. Automatic deployment remains disabled.
