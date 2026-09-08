@@ -4,19 +4,75 @@ on:
   release:
     types: [published]
 
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
-
 permissions:
-  contents: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: dockerhub-hagall-stable
+  cancel-in-progress: false
 
 jobs:
-  release:
-    uses: aukilabs/go-tooling/.github/workflows/release.yml@main
-    name: Release
-    with:
-      app_name: hagall
-    secrets:
-      docker_username: ${{ secrets.DOCKER_USERNAME }}
-      docker_password: ${{ secrets.DOCKER_PASSWORD }}
+  promote-image:
+    name: Promote stable image
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      IMAGE: aukilabs/hagall
+      VERSION: ${{ github.event.release.tag_name }}
+    steps:
+      - name: Prepare release tags
+        id: release
+        run: |
+          if [[ ! "$VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ || ${#VERSION} -gt 128 ]]; then
+            echo "::error::Image promotion requires vMAJOR.MINOR.PATCH with an optional RC/date suffix (128 characters maximum)."
+            exit 1
+          fi
+          printf 'major=v%s\n' "${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          printf 'minor=v%s.%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Wait for the versioned image
+        id: source
+        run: |
+          # Publishing a release can also create its tag, starting the image build.
+          for attempt in $(seq 1 60); do
+            if descriptor="$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{json .Manifest}}')"; then
+              digest="$(jq -er '.digest | select(test("^sha256:[0-9a-f]{64}$"))' <<< "$descriptor")"
+              printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$attempt" -lt 60 ]; then
+              echo "Waiting for the tag build to publish $IMAGE:$VERSION ($attempt/60)..."
+              sleep 10
+            fi
+          done
+          echo "::error::Versioned image is unavailable. Check the tag build, then rerun this workflow."
+          exit 1
+      - name: Promote the existing image
+        env:
+          SOURCE_DIGEST: ${{ steps.source.outputs.digest }}
+          MAJOR: ${{ steps.release.outputs.major }}
+          MINOR: ${{ steps.release.outputs.minor }}
+        run: |
+          docker buildx imagetools create \
+            --tag "$IMAGE:stable" \
+            --tag "$IMAGE:$MAJOR" \
+            --tag "$IMAGE:$MINOR" \
+            "$IMAGE@$SOURCE_DIGEST"
+
+          for tag in stable "$MAJOR" "$MINOR"; do
+            digest="$(docker buildx imagetools inspect "$IMAGE:$tag" --format '{{json .Manifest}}' | jq -er '.digest')"
+            test "$digest" = "$SOURCE_DIGEST"
+          done
+
+  # Release publication promotes image tags only; it does not deploy the relay.
