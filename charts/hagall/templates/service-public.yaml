@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hagall.fullname" . }}-public
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "hagall.labels" . | nindent 4 }}
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    service.beta.kubernetes.io/aws-load-balancer-subnets: {{ join "," .Values.service.public.subnetIds | quote }}
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: tcp
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: traffic-port
+    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true
+    service.beta.kubernetes.io/aws-load-balancer-attributes: load_balancing.cross_zone.enabled=true
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ .Values.service.public.certificateArn | quote }}
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: relay-wss
+    service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+spec:
+  type: LoadBalancer
+  loadBalancerClass: service.k8s.aws/nlb
+  selector:
+    {{- include "hagall.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: relay
+      protocol: TCP
+      port: {{ .Values.service.public.tcpPort }}
+      targetPort: relay
+    - name: relay-wss
+      protocol: TCP
+      port: {{ .Values.service.public.websocketPort }}
+      targetPort: relay-wss

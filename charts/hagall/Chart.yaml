@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hagall
+description: Standalone libp2p Circuit Relay v2 node
+type: application
+version: 0.1.0
+appVersion: v1.0.0-RC-0

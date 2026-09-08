@@ -1,0 +1,46 @@
+fullnameOverride: ""
+# A persisted relay identity must have at most one running pod.
+replicaCount: 1
+
+image:
+  repository: aukilabs/hagall
+  tag: "" # Defaults to Chart.appVersion; digest takes precedence when set.
+  digest: ""
+  pullPolicy: IfNotPresent
+
+identity:
+  existingSecret: ""
+
+relay:
+  ddsUrl: ""
+  ddsPublicKeyUrl: ""
+  dmsUrl: ""
+  publicHost: ""
+  peerId: ""
+  capacity: 32
+  acceptBookings: false
+  admissionTTL: 25s
+  authConcurrency: 64
+  authAttemptsPerIP: 32
+  authAttemptsPerPeer: 8
+  shutdownDrainSeconds: 120
+
+service:
+  public:
+    subnetIds: []
+    certificateArn: ""
+    tcpPort: 443
+    websocketPort: 4443
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 1152Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+podMonitor:
+  enabled: false
+  namespace: monitoring
+  interval: 10s

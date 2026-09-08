@@ -94,6 +94,16 @@ The runtime contains the relay binary and CA certificates, and runs as UID/GID
 `10001`. Credentials remain runtime configuration; local `.env` and identity
 files are excluded from the build context.
 
+## Kubernetes
+
+The [Helm chart](charts/hagall/README.md) deploys one relay identity with an AWS
+NLB, private admin/metrics Services, and optional Prometheus monitoring. Argo CD
+receives environment settings and the image digest from infrastructure inputs.
+Identity files come from an existing Kubernetes Secret.
+
+Run `make chart-check` to lint and render the chart locally with fixtures.
+Image-publishing workflows still do not trigger deployment.
+
 ## Source snapshot
 
 Copied from `aukilabs/domain-service`, branch `feature/dds-p2p-demo`, commit
