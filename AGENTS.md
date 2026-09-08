@@ -21,3 +21,8 @@
   and runtime image layers. Vendor dependencies before building the Dockerfile.
 - Deployment is deliberately disabled in these workflows until the new relay
   deployment is prepared. Preserve existing deployment secrets for that work.
+- `charts/hagall` deploys the relay through Argo CD. Run `make chart-check` after
+  chart changes. Keep the dev resource names/selectors and identity stable;
+  a shared identity permits only one replica, using the Recreate strategy.
+- Keep environment-specific hosts, Peer IDs, subnets, certificates, and identity
+  values in infrastructure inputs. The chart only references an existing Secret.

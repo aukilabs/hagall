@@ -1,0 +1,15 @@
+# Rendering fixtures only; these do not connect to AWS or DDS/DMS.
+identity:
+  existingSecret: relay-identity-fixture
+relay:
+  ddsUrl: https://dds.example.com
+  ddsPublicKeyUrl: https://dds.example.com/service/p2p-verification-keys
+  dmsUrl: https://dms.example.com/v1
+  publicHost: relay.example.com
+  peerId: 12D3KooWJ1FhJ7VLKfZWMsKJcxfwZNguvjGqNuGS2pCQ1mMfHySP
+service:
+  public:
+    subnetIds:
+      - subnet-00000000000000001
+      - subnet-00000000000000002
+    certificateArn: arn:aws:acm:ap-southeast-1:000000000000:certificate/00000000-0000-0000-0000-000000000000

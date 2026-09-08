@@ -19,3 +19,10 @@ go-normalize:
 go-vendor:
 	go mod tidy
 	go mod vendor
+
+.PHONY: chart-check
+chart-check:
+	helm lint --strict charts/hagall -f charts/hagall/ci/values.yaml
+	helm lint --strict charts/hagall -f charts/hagall/ci/values.yaml -f charts/hagall/values.dev.yaml
+	helm template hagall charts/hagall --namespace default -f charts/hagall/ci/values.yaml >/dev/null
+	helm template hagall charts/hagall --namespace default -f charts/hagall/ci/values.yaml -f charts/hagall/values.dev.yaml >/dev/null
