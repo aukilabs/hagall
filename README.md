@@ -75,10 +75,13 @@ using the existing `DOCKER_USERNAME` and `DOCKER_PASSWORD` Actions secrets.
   builds and pushes the image with that full version, the commit SHA, and `latest`.
 - Publishing a GitHub release for that tag promotes the same image to `stable`,
   `vMAJOR`, and `vMAJOR.MINOR`. Releases marked as prereleases in GitHub are skipped;
-  use that flag for RC releases to keep them out of `stable`. Promotion waits up to ten
-  minutes for the versioned image; if its build fails, rerun promotion after
-  fixing the tag build.
-- Deployment is disabled: neither workflow calls Argo CD, SSH, or EC2.
+  use that flag for RC releases to keep them out of `stable`. Promotion waits up
+  to ten minutes for the versioned image; if its build fails, rerun promotion
+  after fixing the tag build.
+- Deployment steps are disabled: neither workflow calls Argo CD, SSH, or EC2.
+  Existing dev Hagall still uses `latest` with pull policy `Always`, so a pod
+  restart can pick up a newly published image. Pin dev to its legacy image
+  before the first tag publish to keep that deployment unchanged.
 
 To build the container locally after configuring private-module access:
 
