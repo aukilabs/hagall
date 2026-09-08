@@ -65,6 +65,32 @@ existing `GLOBAL_PUBLIC_GITHUB_APP_ID` / `GLOBAL_PUBLIC_GITHUB_APP_PRIVATE_KEY`
 secrets to read the private `service-lib` module. The App needs Contents: read
 access to that repository.
 
+## Container images
+
+Images are published to `docker.io/aukilabs/hagall` for Linux amd64 and arm64,
+using the existing `DOCKER_USERNAME` and `DOCKER_PASSWORD` Actions secrets.
+
+- Pushing a `vMAJOR.MINOR.PATCH` tag, optionally suffixed with an RC or date
+  (for example `v1.0.0-RC-0` or `v1.0.0-20260908`), runs the checks above, then
+  builds and pushes the image with that full version, the commit SHA, and `latest`.
+- Publishing a GitHub release for that tag promotes the same image to `stable`,
+  `vMAJOR`, and `vMAJOR.MINOR`. Releases marked as prereleases in GitHub are skipped;
+  use that flag for RC releases to keep them out of `stable`. Promotion waits up to ten
+  minutes for the versioned image; if its build fails, rerun promotion after
+  fixing the tag build.
+- Deployment is disabled: neither workflow calls Argo CD, SSH, or EC2.
+
+To build the container locally after configuring private-module access:
+
+```sh
+go mod vendor
+docker build --build-arg VERSION=v0.0.0 -t hagall:local .
+```
+
+The runtime contains the relay binary and CA certificates, and runs as UID/GID
+`10001`. Credentials remain runtime configuration; local `.env` and identity
+files are excluded from the build context.
+
 ## Source snapshot
 
 Copied from `aukilabs/domain-service`, branch `feature/dds-p2p-demo`, commit

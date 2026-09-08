@@ -13,6 +13,11 @@
   for concurrency changes. Tests use local fixtures and need no live DDS/DMS.
 - After dependency changes, run `make go-vendor`. Vendor output is generated
   locally and ignored; commit go.mod and go.sum.
-- Keep local setup in README.md and .env.example. Test and binary-build CI lives
-  in `.github/workflows/build.yml`; keep its commands aligned with the Makefile.
-- Deployment configuration and release automation are managed separately.
+- Keep local setup in README.md and .env.example. `.github/workflows/build.yml`
+  tests branch/tag pushes and publishes Docker Hub images for version tags.
+  `.github/workflows/release.yml` promotes existing images to stable release tags.
+  Keep test/build commands aligned with the Makefile.
+- Keep private modules and credentials out of public caches, build artifacts,
+  and runtime image layers. Vendor dependencies before building the Dockerfile.
+- Deployment is deliberately disabled in these workflows until the new relay
+  deployment is prepared. Preserve existing deployment secrets for that work.

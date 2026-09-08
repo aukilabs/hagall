@@ -1,0 +1,16 @@
+# Only source and vendored dependencies belong in the build context.
+**
+!Dockerfile
+!go.mod
+!go.sum
+!cmd/
+!cmd/**
+!pkg/
+!pkg/**
+!vendor/
+!vendor/**
+**/.env
+**/.env.*
+**/*.key
+**/*.pem
+**/*.private
