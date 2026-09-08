@@ -13,5 +13,6 @@
   for concurrency changes. Tests use local fixtures and need no live DDS/DMS.
 - After dependency changes, run `make go-vendor`. Vendor output is generated
   locally and ignored; commit go.mod and go.sum.
-- Keep local setup in README.md and .env.example. Deployment configuration and
-  CI/release automation are outside the scope of this extraction.
+- Keep local setup in README.md and .env.example. Test and binary-build CI lives
+  in `.github/workflows/build.yml`; keep its commands aligned with the Makefile.
+- Deployment configuration and release automation are managed separately.

@@ -59,6 +59,12 @@ make build  # bin/auki-relay-node; override VERSION with a semantic version
 make test  # formatting, vet, and tests
 ```
 
+GitHub Actions runs these checks on pushes to `main`, `feature/*`, `bug/*`,
+`chore/*`, and `hotfix/*`, and supports manual runs. It uses Go 1.23 and the
+existing `GLOBAL_PUBLIC_GITHUB_APP_ID` / `GLOBAL_PUBLIC_GITHUB_APP_PRIVATE_KEY`
+secrets to read the private `service-lib` module. The App needs Contents: read
+access to that repository.
+
 ## Source snapshot
 
 Copied from `aukilabs/domain-service`, branch `feature/dds-p2p-demo`, commit
