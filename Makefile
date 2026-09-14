@@ -20,7 +20,11 @@ go-vendor:
 	go mod tidy
 	go mod vendor
 
-.PHONY: chart-check
+.PHONY: chart-deps chart-check
+chart-deps:
+	helm repo add auki https://charts.aukiverse.com --force-update
+	helm dependency build charts/hagall
+
 chart-check:
 	helm lint --strict charts/hagall -f charts/hagall/ci/values.yaml
 	helm lint --strict charts/hagall -f charts/hagall/ci/values.yaml -f charts/hagall/values.dev.yaml

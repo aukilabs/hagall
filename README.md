@@ -79,9 +79,7 @@ using the existing `DOCKER_USERNAME` and `DOCKER_PASSWORD` Actions secrets.
   to ten minutes for the versioned image; if its build fails, rerun promotion
   after fixing the tag build.
 - Deployment steps are disabled: neither workflow calls Argo CD, SSH, or EC2.
-  Existing dev Hagall still uses `latest` with pull policy `Always`, so a pod
-  restart can pick up a newly published image. Pin dev to its legacy image
-  before the first tag publish to keep that deployment unchanged.
+  The dev relay image is pinned by digest in Terraform inputs.
 
 To build the container locally after configuring private-module access:
 
@@ -96,12 +94,15 @@ files are excluded from the build context.
 
 ## Kubernetes
 
-The [Helm chart](charts/hagall/README.md) deploys one relay identity with an AWS
-NLB, private admin/metrics Services, and optional Prometheus monitoring. Argo CD
-receives environment settings and the image digest from infrastructure inputs.
-Identity files come from an existing Kubernetes Secret.
+The relay chart is published from [aukilabs/helm-charts](https://github.com/aukilabs/helm-charts/tree/main/charts/hagall)
+at `https://charts.aukiverse.com`. It deploys one relay identity with an AWS NLB,
+private admin/metrics Services, and optional Prometheus monitoring. The
+[deployment wrapper](charts/hagall/README.md) pins its chart version and supplies
+dev defaults. Argo CD receives environment settings and the image digest from
+infrastructure inputs. Identity files come from an existing Kubernetes Secret.
 
-Run `make chart-check` to lint and render the chart locally with fixtures.
+Run `make chart-deps chart-check` to fetch the pinned chart, lint it, and render
+the wrapper locally with fixtures.
 Image-publishing workflows still do not trigger deployment.
 
 ## Source snapshot
@@ -111,4 +112,5 @@ Copied from `aukilabs/domain-service`, branch `feature/dds-p2p-demo`, commit
 
 `relay-node/cmd` and `relay-node/pkg` became `cmd` and `pkg`. Required helpers
 were extracted from `pkg/authpkg` and `pkg/models/node.go`; imports now use
-`github.com/aukilabs/hagall`. The original source remains in `domain-service`.
+`github.com/aukilabs/hagall`. The original source is available at the recorded
+commit; its standalone relay tree has since been removed from `domain-service`.

@@ -1,6 +1,7 @@
 /bin/
 /vendor/
 /.local/
+/charts/hagall/charts/
 .env
 .env.*
 !.env.example

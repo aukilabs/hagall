@@ -1,0 +1,6 @@
+dependencies:
+- name: hagall
+  repository: https://charts.aukiverse.com
+  version: 1.0.0
+digest: sha256:312514632ce36db37772d1430e204429ca6b53069de66aab6e74121dcd62d56b
+generated: "2026-09-08T13:13:18.524813+07:00"

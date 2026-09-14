@@ -1,6 +1,9 @@
 apiVersion: v2
 name: hagall
-description: Standalone libp2p Circuit Relay v2 node
+description: Deployment wrapper for the published Hagall relay chart
 type: application
-version: 0.1.0
-appVersion: v1.0.0-RC-0
+version: 1.0.0
+dependencies:
+  - name: hagall
+    version: 1.0.0
+    repository: https://charts.aukiverse.com
