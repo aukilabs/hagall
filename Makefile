@@ -30,7 +30,3 @@ chart-check:
 	helm lint --strict charts/hagall -f charts/hagall/ci/values.yaml -f charts/hagall/values.dev.yaml
 	helm template hagall charts/hagall --namespace default -f charts/hagall/ci/values.yaml >/dev/null
 	helm template hagall charts/hagall --namespace default -f charts/hagall/ci/values.yaml -f charts/hagall/values.dev.yaml >/dev/null
-
-.PHONY: chart-check-staging
-chart-check-staging:
-	python3 charts/hagall/ci/test_staging.py
