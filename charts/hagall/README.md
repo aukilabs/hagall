@@ -3,7 +3,11 @@
 This chart pins `hagall` version **1.0.0** from `https://charts.aukiverse.com`.
 Templates, defaults, schema, and operator instructions are maintained in
 [aukilabs/helm-charts](https://github.com/aukilabs/helm-charts/tree/main/charts/hagall).
-This repository supplies the wrapper and dev defaults used by Argo CD.
+This repository supplies the wrapper and environment overrides used by Argo CD.
+
+For the separate, booking-gated staging relay, see [STAGING.md](STAGING.md).
+Do not use the historical wrapper migration below for staging: preserve legacy
+Hagall and pin the new Application to the reviewed commit containing staging values.
 
 All overrides are nested under `hagall:`. `values.dev.yaml` preserves the
 `auki-relay-node` resource names and selector, capacity of 128, admission limits,
