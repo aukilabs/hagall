@@ -445,3 +445,29 @@ func ExampleEnvironmentMatrix() {
 	// RELAY_ACCEPT_BOOKINGS=false
 	// RELAY_ADMIN_ADDR=127.0.0.1:9090
 }
+
+func TestMaximumCapacityRequiresMatchingConnectionBudgets(t *testing.T) {
+	values := requiredEnvironment(t)
+	for _, name := range []string{"RELAY_LOCAL_CAPACITY", "RELAY_DDS_MAX_CONCURRENCY", "RELAY_MAX_RESERVATIONS", "RELAY_MAX_RESERVATIONS_PER_IP", "RELAY_MAX_RESERVATIONS_PER_ASN"} {
+		values[name] = "2048"
+	}
+	_, err := LoadFrom(lookupMap(values))
+	require.ErrorContains(t, err, "connection-manager low water")
+	values["RELAY_CONNMGR_LOW_WATER"] = "2048"
+	values["RELAY_CONNMGR_HIGH_WATER"] = "2304"
+	values["RELAY_RM_CONNECTIONS"] = "2304"
+	values["RELAY_MAX_CIRCUITS_PER_PEER"] = "32"
+	cfg, err := LoadFrom(lookupMap(values))
+	require.NoError(t, err)
+	capacity := 2048
+	effective, err := cfg.EffectiveCapacityForDDSClaim(&capacity)
+	require.NoError(t, err)
+	require.Equal(t, capacity, effective)
+	values["RELAY_LOCAL_CAPACITY"] = "2049"
+	_, err = LoadFrom(lookupMap(values))
+	require.ErrorContains(t, err, "local relay capacity must be in [1,2048]")
+	values["RELAY_LOCAL_CAPACITY"] = "2048"
+	values["RELAY_MAX_CIRCUITS_PER_PEER"] = "257"
+	_, err = LoadFrom(lookupMap(values))
+	require.ErrorContains(t, err, "maximum circuits per peer must be in [1,256]")
+}

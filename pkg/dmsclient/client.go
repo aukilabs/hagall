@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aukilabs/hagall/pkg/relayconfig"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
@@ -29,7 +30,7 @@ const (
 	minLeaseTTLSeconds     = 60
 	maxLeaseTTLSeconds     = 300
 	minRecoverySeconds     = 300
-	maxEffectiveCapacity   = 256
+	maxEffectiveCapacity   = relayconfig.MaximumCapacity
 )
 
 type Options struct {
@@ -451,7 +452,7 @@ func (c *Client) Active(ctx context.Context, accessToken string, sessionID uuid.
 		return nil, err
 	}
 	if len(response.Assignments) > maxEffectiveCapacity {
-		return nil, errors.New("DMS returned more than 256 active relay assignments")
+		return nil, fmt.Errorf("DMS returned more than %d active relay assignments", maxEffectiveCapacity)
 	}
 	assignments := make([]Assignment, 0, len(response.Assignments))
 	seenAssignments := make(map[uuid.UUID]struct{}, len(response.Assignments))
@@ -873,7 +874,7 @@ func validateAssignmentCommon(assignment *Assignment) error {
 		return errors.New("assignment fence contains a zero UUID")
 	}
 	if assignment.EffectiveCapacity < 1 || assignment.EffectiveCapacity > maxEffectiveCapacity {
-		return errors.New("effective provider capacity is outside 1..256")
+		return fmt.Errorf("effective provider capacity is outside 1..%d", maxEffectiveCapacity)
 	}
 	if err := validateWireTime("requested_until", assignment.RequestedUntil); err != nil {
 		return err
@@ -1012,7 +1013,7 @@ func validateExpectations(expected Expectations) error {
 	if expected.LocalCapacity.Total <= 0 || expected.LocalCapacity.Total > maxEffectiveCapacity ||
 		expected.LocalCapacity.PerIP <= 0 || expected.LocalCapacity.PerIP > maxEffectiveCapacity ||
 		expected.LocalCapacity.PerASN <= 0 || expected.LocalCapacity.PerASN > maxEffectiveCapacity {
-		return errors.New("local total/IP/ASN reservation capacities must each be in 1..256")
+		return fmt.Errorf("local total/IP/ASN reservation capacities must each be in 1..%d", maxEffectiveCapacity)
 	}
 	return validateMetadata(expected.Metadata)
 }

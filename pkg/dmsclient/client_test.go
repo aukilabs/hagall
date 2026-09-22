@@ -2,6 +2,7 @@ package dmsclient
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"io"
@@ -13,6 +14,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	libp2pcrypto "github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/require"
 )
 
@@ -764,4 +767,51 @@ func newDMSClient(t *testing.T, baseURL string, now time.Time, statusInterval, r
 	})
 	require.NoError(t, err)
 	return client
+}
+
+func TestProviderSessionAndActiveRecoverySupport2048Slots(t *testing.T) {
+	now := time.Date(2026, 9, 22, 0, 0, 0, 0, time.UTC)
+	sessionID := uuid.New()
+	expected := validExpectations(now)
+	expected.LocalCapacity = LocalCapacity{Total: 2048, PerIP: 2048, PerASN: 2048}
+	rows := make([]assignmentResponse, 2048)
+	for i := range rows {
+		_, public, err := libp2pcrypto.GenerateEd25519Key(rand.Reader)
+		require.NoError(t, err)
+		target, err := peer.IDFromPublicKey(public)
+		require.NoError(t, err)
+		rows[i] = validAssignmentResponse(now, sessionID, uuid.New(), uuid.New(), SlotStateReady, expected.Metadata)
+		rows[i].TargetPeerID = target.String()
+		rows[i].EffectiveCapacity = 2048
+	}
+	for _, overflow := range []bool{false, true} {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost {
+				response := validSessionResponse(now, sessionID, expected)
+				response.EffectiveCapacity = 2048
+				if overflow {
+					response.EffectiveCapacity++
+				}
+				writeDMSJSON(t, w, http.StatusCreated, response)
+				return
+			}
+			response := assignmentsResponse{Assignments: rows}
+			if overflow {
+				response.Assignments = append(response.Assignments, rows[0])
+			}
+			writeDMSJSON(t, w, http.StatusOK, response)
+		}))
+		client := newDMSClient(t, server.URL, now, 30*time.Second, 10*time.Second, 10*time.Second)
+		_, openErr := client.OpenSession(context.Background(), OpenInput{AccessToken: "token", BootNonce: uuid.New(), Expected: expected})
+		active, activeErr := client.Active(context.Background(), "token", sessionID)
+		server.Close()
+		if overflow {
+			require.ErrorContains(t, openErr, "effective provider capacity")
+			require.ErrorContains(t, activeErr, "more than 2048")
+		} else {
+			require.NoError(t, openErr)
+			require.NoError(t, activeErr)
+			require.Len(t, active, 2048)
+		}
+	}
 }

@@ -13,7 +13,13 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
-const MinimumCircuitDuration = 15 * time.Minute
+const (
+	MinimumCircuitDuration = 15 * time.Minute
+	// MaximumCapacity bounds provider bookings, reservations, and DMS recovery.
+	// It is a configuration ceiling, not a measured throughput guarantee.
+	MaximumCapacity        = 2048
+	MaximumCircuitsPerPeer = 256
+)
 
 // Limits is the single authoritative Circuit Relay v2 limit profile. Data is
 // the maximum number of bytes in each direction, not a shared bidirectional

@@ -105,6 +105,25 @@ Run `make chart-deps chart-check` to fetch the pinned chart, lint it, and render
 the wrapper locally with fixtures.
 Image-publishing workflows still do not trigger deployment.
 
+## Capacity
+
+Provider bookings and reservations support an explicit ceiling of 2,048. The
+local default remains 32 and the dev chart override remains 128; the ceiling is
+not a throughput guarantee. DMS must support the same ceiling and its database
+migration before raising a provider's DDS-signed capacity. DMS's configured
+provider ceiling and organization slot quota remain independent admission gates.
+
+Keep the local total/IP/ASN reservation limits at least as large as the signed
+capacity. Connection-manager low water must cover local capacity, high water
+must exceed low water, and resource-manager connections/file descriptors/streams
+must cover those watermarks. Per-peer circuits retain a separate maximum of 256
+(default 16); increasing bookings does not require increasing that limit.
+
+Deploy the compatible DMS migration/service and relay image before opting into
+larger chart values. The DMS database downgrade refuses persisted capacities above
+256, including ended session history; retain the newer schema while those records
+remain.
+
 ## Source snapshot
 
 Copied from `aukilabs/domain-service`, branch `feature/dds-p2p-demo`, commit

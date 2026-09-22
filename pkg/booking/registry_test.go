@@ -404,3 +404,22 @@ func TestRegistryValidatesBounds(t *testing.T) {
 	_, err = New(Config{MaximumBookings: 1, MaximumAdmissions: 1, AdmissionTTL: 31 * time.Second})
 	require.Error(t, err)
 }
+
+func TestRegistrySupports2048BookingsAndRejectsOverflow(t *testing.T) {
+	now := time.Date(2026, 9, 22, 0, 0, 0, 0, time.UTC)
+	registry := testRegistry(t, newAtomicClock(now), 2048, 4096, 30*time.Second)
+	session := testSession(now, 2048)
+	require.NoError(t, registry.SetSession(session))
+	domain := uuid.New()
+	for range 2048 {
+		authority := testAuthority(bookingPeer(t), session.ProviderSessionID, domain, now)
+		require.NoError(t, registry.InstallStarting(authority))
+		require.NoError(t, registry.ActivateReady(authority.TargetPeerID, authority.Fence))
+		require.True(t, registry.AllowReserve(authority.TargetPeerID))
+	}
+	bookings, _ := registry.Counts()
+	require.Equal(t, 2048, bookings)
+	require.ErrorIs(t, registry.InstallStarting(testAuthority(bookingPeer(t), session.ProviderSessionID, domain, now)), ErrBookingCapacity)
+	_, err := New(Config{MaximumBookings: 2049, MaximumAdmissions: 4096, AdmissionTTL: 30 * time.Second})
+	require.Error(t, err)
+}
