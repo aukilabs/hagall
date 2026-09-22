@@ -13,7 +13,13 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
-const MinimumCircuitDuration = 15 * time.Minute
+const (
+	MinimumCircuitDuration = 15 * time.Minute
+	// MaxCapacityValue is the PostgreSQL INTEGER representation limit used by DMS.
+	// Operating capacity is configuration, not a fixed protocol ceiling.
+	MaxCapacityValue       = math.MaxInt32
+	MaximumCircuitsPerPeer = 256
+)
 
 // Limits is the single authoritative Circuit Relay v2 limit profile. Data is
 // the maximum number of bytes in each direction, not a shared bidirectional

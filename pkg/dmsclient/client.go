@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"mime"
 	"net"
 	"net/http"
@@ -17,22 +18,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aukilabs/hagall/pkg/relayconfig"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 const (
-	maxResponseBytes       = 64 << 10
-	maxActiveResponseBytes = (maxEffectiveCapacity + 1) * maxResponseBytes
-	providerSessionHeader  = "Provider-Session-Id"
-	statusTTLSeconds       = 180
-	minLeaseTTLSeconds     = 60
-	maxLeaseTTLSeconds     = 300
-	minRecoverySeconds     = 300
-	maxEffectiveCapacity   = 256
+	maxResponseBytes      = 64 << 10
+	providerSessionHeader = "Provider-Session-Id"
+	statusTTLSeconds      = 180
+	minLeaseTTLSeconds    = 60
+	maxLeaseTTLSeconds    = 300
+	minRecoverySeconds    = 300
+	maxEffectiveCapacity  = relayconfig.MaxCapacityValue
 )
 
 type Options struct {
+	// Capacity bounds assignment count and response bytes to the local booking budget.
+	Capacity            int
 	BaseURL             string
 	HTTPClient          *http.Client
 	AllowHTTPForTesting bool
@@ -42,6 +45,7 @@ type Options struct {
 }
 
 type Client struct {
+	capacity         int
 	baseURL          *url.URL
 	http             *http.Client
 	statusInterval   time.Duration
@@ -202,6 +206,9 @@ func New(opts Options) (*Client, error) {
 	if opts.MaxStatusBackoff <= 0 {
 		return nil, errors.New("DMS provider-status maximum backoff must be positive")
 	}
+	if opts.Capacity < 1 || opts.Capacity > maxEffectiveCapacity || opts.Capacity > math.MaxInt/maxResponseBytes-1 {
+		return nil, errors.New("DMS client capacity must be positive and fit database and response-size bounds")
+	}
 	httpClient := *opts.HTTPClient
 	httpClient.CheckRedirect = func(*http.Request, []*http.Request) error {
 		return http.ErrUseLastResponse
@@ -211,6 +218,7 @@ func New(opts Options) (*Client, error) {
 		now = time.Now
 	}
 	return &Client{
+		capacity:         opts.Capacity,
 		baseURL:          baseURL,
 		http:             &httpClient,
 		statusInterval:   opts.StatusInterval,
@@ -447,11 +455,11 @@ func (c *Client) Active(ctx context.Context, accessToken string, sessionID uuid.
 		return nil, err
 	}
 	var response assignmentsResponse
-	if _, err := c.doJSONWithLimit(ctx, http.MethodGet, "/relay-provider/bookings/active", accessToken, sessionID, nil, &response, maxActiveResponseBytes, http.StatusOK); err != nil {
+	if _, err := c.doJSONWithLimit(ctx, http.MethodGet, "/relay-provider/bookings/active", accessToken, sessionID, nil, &response, (c.capacity+1)*maxResponseBytes, http.StatusOK); err != nil {
 		return nil, err
 	}
-	if len(response.Assignments) > maxEffectiveCapacity {
-		return nil, errors.New("DMS returned more than 256 active relay assignments")
+	if len(response.Assignments) > c.capacity {
+		return nil, fmt.Errorf("DMS returned more than %d active relay assignments", c.capacity)
 	}
 	assignments := make([]Assignment, 0, len(response.Assignments))
 	seenAssignments := make(map[uuid.UUID]struct{}, len(response.Assignments))
@@ -578,7 +586,7 @@ func (c *Client) validateSession(response sessionResponse, expected Expectations
 		return nil, errors.New("DMS returned an invalid effective provider capacity")
 	}
 	capacity := int(response.EffectiveCapacity)
-	if capacity > expected.LocalCapacity.Total || capacity > expected.LocalCapacity.PerIP || capacity > expected.LocalCapacity.PerASN {
+	if capacity > c.capacity || capacity > expected.LocalCapacity.Total || capacity > expected.LocalCapacity.PerIP || capacity > expected.LocalCapacity.PerASN {
 		return nil, errors.New("DMS effective capacity exceeds local total/IP/ASN reservation capacity")
 	}
 	if response.SchedulingRevision != expected.SchedulingRevision {
@@ -873,7 +881,7 @@ func validateAssignmentCommon(assignment *Assignment) error {
 		return errors.New("assignment fence contains a zero UUID")
 	}
 	if assignment.EffectiveCapacity < 1 || assignment.EffectiveCapacity > maxEffectiveCapacity {
-		return errors.New("effective provider capacity is outside 1..256")
+		return fmt.Errorf("effective provider capacity is outside 1..%d", maxEffectiveCapacity)
 	}
 	if err := validateWireTime("requested_until", assignment.RequestedUntil); err != nil {
 		return err
@@ -1012,7 +1020,7 @@ func validateExpectations(expected Expectations) error {
 	if expected.LocalCapacity.Total <= 0 || expected.LocalCapacity.Total > maxEffectiveCapacity ||
 		expected.LocalCapacity.PerIP <= 0 || expected.LocalCapacity.PerIP > maxEffectiveCapacity ||
 		expected.LocalCapacity.PerASN <= 0 || expected.LocalCapacity.PerASN > maxEffectiveCapacity {
-		return errors.New("local total/IP/ASN reservation capacities must each be in 1..256")
+		return fmt.Errorf("local total/IP/ASN reservation capacities must each be in 1..%d", maxEffectiveCapacity)
 	}
 	return validateMetadata(expected.Metadata)
 }

@@ -201,6 +201,7 @@ func Start(parent context.Context, cfg config.Config, version string, logger *sl
 		return nil, err
 	}
 	dms, err := dmsclient.New(dmsclient.Options{
+		Capacity:            cfg.Relay.LocalCapacity,
 		BaseURL:             cfg.DMSURL,
 		HTTPClient:          httpClient,
 		AllowHTTPForTesting: cfg.AllowLocalTestHTTP,
@@ -656,8 +657,10 @@ func (a *Application) validateEffectiveCapacity(effective int, signedMaxConcurre
 	if err != nil {
 		return err
 	}
-	if effective != expected {
-		return fmt.Errorf("DMS effective relay capacity %d does not match DDS-derived capacity %d", effective, expected)
+	// DMS may apply a lower configured scheduling ceiling, but cannot grant
+	// more authority than the signed DDS capacity or the local resource budget.
+	if effective < 1 || effective > expected {
+		return fmt.Errorf("DMS effective relay capacity %d is outside DDS-authorized range [1,%d]", effective, expected)
 	}
 	return nil
 }

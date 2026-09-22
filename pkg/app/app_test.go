@@ -265,7 +265,9 @@ func TestEffectiveCapacityUsesSignedDDSOverrideDistinctFromLocalCapacity(t *test
 	require.NoError(t, err)
 	require.Equal(t, signed, effective)
 	require.NoError(t, application.validateEffectiveCapacity(signed, &signed))
-	require.ErrorContains(t, application.validateEffectiveCapacity(cfg.Relay.LocalCapacity, &signed), "does not match")
+	require.NoError(t, application.validateEffectiveCapacity(1, &signed), "DMS may impose a lower ceiling")
+	require.ErrorContains(t, application.validateEffectiveCapacity(0, &signed), "DDS-authorized range")
+	require.ErrorContains(t, application.validateEffectiveCapacity(cfg.Relay.LocalCapacity, &signed), "DDS-authorized range")
 }
 
 func TestLiveRecoveryGraceMustStrictlyExceedConfiguredDrainBeforeAccepting(t *testing.T) {
