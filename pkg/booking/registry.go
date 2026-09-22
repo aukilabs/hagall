@@ -15,7 +15,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 
-const MaximumProviderBookings = relayconfig.MaximumCapacity
+const MaximumProviderBookings = relayconfig.MaxCapacityValue
 
 var (
 	ErrAuthorityExpired   = errors.New("relay booking authority is expired")

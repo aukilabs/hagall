@@ -330,6 +330,7 @@ func TestProviderSessionReturnsTypedBoundedErrorsWithoutToken(t *testing.T) {
 
 func TestProviderSessionRequiresCanonicalImmutableInputAndFiniteHTTPTimeout(t *testing.T) {
 	_, err := New(Options{
+		Capacity:            32,
 		BaseURL:             "http://dms.example.com",
 		HTTPClient:          &http.Client{Timeout: 10 * time.Second},
 		AllowHTTPForTesting: true,
@@ -339,14 +340,16 @@ func TestProviderSessionRequiresCanonicalImmutableInputAndFiniteHTTPTimeout(t *t
 	require.ErrorContains(t, err, "HTTPS")
 
 	_, err = New(Options{
-		BaseURL: "https://dms.example.com", HTTPClient: &http.Client{},
+		Capacity: 32,
+		BaseURL:  "https://dms.example.com", HTTPClient: &http.Client{},
 		StatusInterval: 30 * time.Second, MaxStatusBackoff: 10 * time.Second,
 	})
 	require.ErrorContains(t, err, "positive timeout")
 
 	now := time.Date(2026, 8, 20, 15, 0, 0, 0, time.UTC)
 	client, err := New(Options{
-		BaseURL: "https://dms.example.com", HTTPClient: &http.Client{Timeout: 10 * time.Second},
+		Capacity: 32,
+		BaseURL:  "https://dms.example.com", HTTPClient: &http.Client{Timeout: 10 * time.Second},
 		StatusInterval: 30 * time.Second, MaxStatusBackoff: 10 * time.Second, Now: func() time.Time { return now },
 	})
 	require.NoError(t, err)
@@ -755,9 +758,14 @@ func stringPointer(value string) *string { return &value }
 
 const testPeerID = "12D3KooWQ4fS8W4KJmGcgCjeH75qZKJ9xV6WGUzEJpZdC9bmbiD9"
 
-func newDMSClient(t *testing.T, baseURL string, now time.Time, statusInterval, requestTimeout, maxBackoff time.Duration) *Client {
+func newDMSClient(t *testing.T, baseURL string, now time.Time, statusInterval, requestTimeout, maxBackoff time.Duration, capacities ...int) *Client {
 	t.Helper()
+	capacity := 32
+	if len(capacities) != 0 {
+		capacity = capacities[0]
+	}
 	client, err := New(Options{
+		Capacity:            capacity,
 		BaseURL:             baseURL,
 		HTTPClient:          &http.Client{Timeout: requestTimeout},
 		AllowHTTPForTesting: strings.HasPrefix(baseURL, "http://"),
@@ -769,12 +777,12 @@ func newDMSClient(t *testing.T, baseURL string, now time.Time, statusInterval, r
 	return client
 }
 
-func TestProviderSessionAndActiveRecoverySupport2048Slots(t *testing.T) {
+func TestProviderSessionAndActiveRecoverySupport10000Slots(t *testing.T) {
 	now := time.Date(2026, 9, 22, 0, 0, 0, 0, time.UTC)
 	sessionID := uuid.New()
 	expected := validExpectations(now)
-	expected.LocalCapacity = LocalCapacity{Total: 2048, PerIP: 2048, PerASN: 2048}
-	rows := make([]assignmentResponse, 2048)
+	expected.LocalCapacity = LocalCapacity{Total: 10000, PerIP: 10000, PerASN: 10000}
+	rows := make([]assignmentResponse, 10000)
 	for i := range rows {
 		_, public, err := libp2pcrypto.GenerateEd25519Key(rand.Reader)
 		require.NoError(t, err)
@@ -782,13 +790,13 @@ func TestProviderSessionAndActiveRecoverySupport2048Slots(t *testing.T) {
 		require.NoError(t, err)
 		rows[i] = validAssignmentResponse(now, sessionID, uuid.New(), uuid.New(), SlotStateReady, expected.Metadata)
 		rows[i].TargetPeerID = target.String()
-		rows[i].EffectiveCapacity = 2048
+		rows[i].EffectiveCapacity = 10000
 	}
 	for _, overflow := range []bool{false, true} {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodPost {
 				response := validSessionResponse(now, sessionID, expected)
-				response.EffectiveCapacity = 2048
+				response.EffectiveCapacity = 10000
 				if overflow {
 					response.EffectiveCapacity++
 				}
@@ -801,17 +809,22 @@ func TestProviderSessionAndActiveRecoverySupport2048Slots(t *testing.T) {
 			}
 			writeDMSJSON(t, w, http.StatusOK, response)
 		}))
-		client := newDMSClient(t, server.URL, now, 30*time.Second, 10*time.Second, 10*time.Second)
+		client := newDMSClient(t, server.URL, now, 30*time.Second, 10*time.Second, 10*time.Second, 10000)
 		_, openErr := client.OpenSession(context.Background(), OpenInput{AccessToken: "token", BootNonce: uuid.New(), Expected: expected})
 		active, activeErr := client.Active(context.Background(), "token", sessionID)
+		if !overflow {
+			smaller := newDMSClient(t, server.URL, now, 30*time.Second, 10*time.Second, 10*time.Second, 800)
+			_, err := smaller.Active(context.Background(), "token", sessionID)
+			require.ErrorContains(t, err, "more than 800")
+		}
 		server.Close()
 		if overflow {
-			require.ErrorContains(t, openErr, "effective provider capacity")
-			require.ErrorContains(t, activeErr, "more than 2048")
+			require.ErrorContains(t, openErr, "effective capacity")
+			require.ErrorContains(t, activeErr, "more than 10000")
 		} else {
 			require.NoError(t, openErr)
 			require.NoError(t, activeErr)
-			require.Len(t, active, 2048)
+			require.Len(t, active, 10000)
 		}
 	}
 }

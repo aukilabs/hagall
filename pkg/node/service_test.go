@@ -69,9 +69,9 @@ func testOptions(t *testing.T, capacity int) Options {
 			MaxCircuitsPerPeer:        16,
 			BufferBytes:               2048,
 			MemoryBytes:               1 << 30,
-			FileDescriptors:           4096,
+			FileDescriptors:           max(4096, capacity+256),
 			Connections:               max(2048, capacity+256),
-			Streams:                   8192,
+			Streams:                   max(8192, capacity*4),
 			ConnectionManagerLow:      max(capacity, 768),
 			ConnectionManagerHigh:     max(1024, capacity+256),
 			ConnectionManagerGrace:    time.Minute,
@@ -461,20 +461,20 @@ func circuitTargetAddress(t *testing.T, relayID, targetID peer.ID) ma.Multiaddr 
 }
 
 func TestResourceAndConnectionManagerLimitsRejectUnsafeCapacity(t *testing.T) {
-	options := testOptions(t, MaxProviderCapacity)
+	options := testOptions(t, 10000)
 	require.NoError(t, options.Resources.Validate())
-	require.NoError(t, options.Resources.ValidateEffectiveCapacity(MaxProviderCapacity))
+	require.NoError(t, options.Resources.ValidateEffectiveCapacity(10000))
 
 	invalid := options.Resources
-	invalid.ConnectionManagerLow = MaxProviderCapacity - 1
+	invalid.ConnectionManagerLow = 10000 - 1
 	require.ErrorContains(t, invalid.Validate(), "low watermark")
 	invalid = options.Resources
-	invalid.MaxReservationsPerIP = MaxProviderCapacity - 1
+	invalid.MaxReservationsPerIP = 10000 - 1
 	require.ErrorContains(t, invalid.Validate(), "per-IP")
 	invalid = options.Resources
 	invalid.Connections = invalid.ConnectionManagerHigh - 1
 	require.ErrorContains(t, invalid.Validate(), "high watermark")
-	require.Error(t, options.Resources.ValidateEffectiveCapacity(MaxProviderCapacity+1))
+	require.Error(t, options.Resources.ValidateEffectiveCapacity(10000+1))
 }
 
 type hostCloser interface {

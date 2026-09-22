@@ -29,7 +29,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const MaxProviderCapacity = relayconfig.MaximumCapacity
+const MaxProviderCapacity = relayconfig.MaxCapacityValue
 
 type Resources struct {
 	Capacity                  int

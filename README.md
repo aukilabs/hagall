@@ -107,22 +107,27 @@ Image-publishing workflows still do not trigger deployment.
 
 ## Capacity
 
-Provider bookings and reservations support an explicit ceiling of 2,048. The
-local default remains 32 and the dev chart override remains 128; the ceiling is
-not a throughput guarantee. DMS must support the same ceiling and its database
-migration before raising a provider's DDS-signed capacity. DMS's configured
-provider ceiling and organization slot quota remain independent admission gates.
+Provider booking/reservation capacity is configuration, not a fixed 2048-slot
+ceiling. `RELAY_LOCAL_CAPACITY` and the DDS registration capacity can be set to
+values such as 800 or 10000 without rebuilding. The local default remains 32 and
+the dev chart override remains 128. DMS's configurable provider ceiling defaults
+to 2048; its separate organization quota remains an independent admission gate.
+DMS may grant fewer slots than the signed capacity, but never more. Increasing
+capacity does not assert that the hardware can sustain the resulting throughput.
 
-Keep the local total/IP/ASN reservation limits at least as large as the signed
+Keep local total/IP/ASN reservation limits at least as large as the signed
 capacity. Connection-manager low water must cover local capacity, high water
 must exceed low water, and resource-manager connections/file descriptors/streams
-must cover those watermarks. Per-peer circuits retain a separate maximum of 256
-(default 16); increasing bookings does not require increasing that limit.
+must cover those watermarks. Admission-cache and memory budgets must also fit the
+workload. Per-peer circuits retain a separate maximum of 256 (default 16).
+The only fixed total-capacity bound is DMS's PostgreSQL INTEGER representation.
+DMS response counts and byte budgets are bounded by the configured local capacity.
 
-Deploy the compatible DMS migration/service and relay image before opting into
-larger chart values. The DMS database downgrade refuses persisted capacities above
-256, including ended session history; retain the newer schema while those records
-remain.
+Deploy DMS migration `0013_relay_configurable_capacity` and the compatible
+service/relay image before opting into larger chart values. Configuration changes
+require a restart; active assignments remain fenced to their provider session.
+The DMS database downgrade refuses persisted capacities above 256, including ended
+session history; retain the newer schema while those records remain.
 
 ## Source snapshot
 

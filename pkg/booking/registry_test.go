@@ -405,21 +405,21 @@ func TestRegistryValidatesBounds(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestRegistrySupports2048BookingsAndRejectsOverflow(t *testing.T) {
+func TestRegistrySupports10000BookingsAndRejectsOverflow(t *testing.T) {
 	now := time.Date(2026, 9, 22, 0, 0, 0, 0, time.UTC)
-	registry := testRegistry(t, newAtomicClock(now), 2048, 4096, 30*time.Second)
-	session := testSession(now, 2048)
+	registry := testRegistry(t, newAtomicClock(now), 10000, 4096, 30*time.Second)
+	session := testSession(now, 10000)
 	require.NoError(t, registry.SetSession(session))
 	domain := uuid.New()
-	for range 2048 {
+	for range 10000 {
 		authority := testAuthority(bookingPeer(t), session.ProviderSessionID, domain, now)
 		require.NoError(t, registry.InstallStarting(authority))
 		require.NoError(t, registry.ActivateReady(authority.TargetPeerID, authority.Fence))
 		require.True(t, registry.AllowReserve(authority.TargetPeerID))
 	}
 	bookings, _ := registry.Counts()
-	require.Equal(t, 2048, bookings)
+	require.Equal(t, 10000, bookings)
 	require.ErrorIs(t, registry.InstallStarting(testAuthority(bookingPeer(t), session.ProviderSessionID, domain, now)), ErrBookingCapacity)
-	_, err := New(Config{MaximumBookings: 2049, MaximumAdmissions: 4096, AdmissionTTL: 30 * time.Second})
+	_, err := New(Config{MaximumBookings: 0, MaximumAdmissions: 4096, AdmissionTTL: 30 * time.Second})
 	require.Error(t, err)
 }

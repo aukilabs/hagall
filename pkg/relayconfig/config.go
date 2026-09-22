@@ -15,9 +15,9 @@ import (
 
 const (
 	MinimumCircuitDuration = 15 * time.Minute
-	// MaximumCapacity bounds provider bookings, reservations, and DMS recovery.
-	// It is a configuration ceiling, not a measured throughput guarantee.
-	MaximumCapacity        = 2048
+	// MaxCapacityValue is the PostgreSQL INTEGER representation limit used by DMS.
+	// Operating capacity is configuration, not a fixed protocol ceiling.
+	MaxCapacityValue       = math.MaxInt32
 	MaximumCircuitsPerPeer = 256
 )
 
