@@ -110,7 +110,7 @@ Image-publishing workflows still do not trigger deployment.
 Provider booking/reservation capacity is configuration, not a fixed 2048-slot
 ceiling. `RELAY_LOCAL_CAPACITY` and the DDS registration capacity can be set to
 values such as 800 or 10000 without rebuilding. The local default remains 32 and
-the dev chart override remains 128. DMS's configurable provider ceiling defaults
+the dev chart override is 2048. DMS's configurable provider ceiling defaults
 to 2048; its separate organization quota remains an independent admission gate.
 DMS may grant fewer slots than the signed capacity, but never more. Increasing
 capacity does not assert that the hardware can sustain the resulting throughput.

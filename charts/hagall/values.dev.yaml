@@ -3,7 +3,8 @@ hagall:
   fullnameOverride: auki-relay-node
 
   relay:
-    capacity: 128
+    capacity: 2048
+    maxCircuitsPerPeer: 128
     acceptBookings: true
     authConcurrency: 128
     authAttemptsPerIP: 128

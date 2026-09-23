@@ -2,8 +2,8 @@ apiVersion: v2
 name: hagall
 description: Deployment wrapper for the published Hagall relay chart
 type: application
-version: 1.0.0
+version: 1.1.0
 dependencies:
   - name: hagall
-    version: 1.0.0
+    version: 1.1.0
     repository: https://charts.aukiverse.com
