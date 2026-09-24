@@ -127,6 +127,7 @@ type Worker struct {
 	wakeup          chan struct{}
 	deadlineChanged chan struct{}
 	availability    chan struct{}
+	recoveryNeeded  chan struct{}
 	errors          chan error
 	wait            sync.WaitGroup
 	close           sync.Once
@@ -147,6 +148,7 @@ func New(options Options) (*Worker, error) {
 		dms: options.DMS, registry: options.Registry, metadata: cloneMetadata(options.Metadata),
 		closePeer: options.ClosePeer, config: options.Config, observer: options.Observer,
 		tracked: make(map[assignmentKey]*trackedAssignment), wakeup: make(chan struct{}, 1), deadlineChanged: make(chan struct{}, 1), availability: make(chan struct{}, 1), errors: make(chan error, 1),
+		recoveryNeeded: make(chan struct{}, 1),
 	}, nil
 }
 
@@ -604,9 +606,10 @@ func (w *Worker) Start(parent context.Context) error {
 	for _, assignment := range tracked {
 		w.startHeartbeat(assignment)
 	}
-	w.wait.Add(2)
+	w.wait.Add(3)
 	go func() { defer w.wait.Done(); w.claimLoop() }()
 	go func() { defer w.wait.Done(); w.expiryLoop() }()
+	go func() { defer w.wait.Done(); w.recoveryLoop(recoveryReconcileInterval) }()
 	return nil
 }
 
@@ -887,6 +890,12 @@ func (w *Worker) heartbeatLoop(ctx context.Context, tracked *trackedAssignment) 
 				w.observeOperation(telemetry.ProviderHeartbeat, operationErrorOutcome(heartbeatErr))
 				if isTerminalAssignmentError(heartbeatErr) {
 					w.revoke(assignment)
+					var apiErr *dmsclient.APIError
+					if errors.As(heartbeatErr, &apiErr) && apiErr.StatusCode == http.StatusConflict {
+						// A requester failure rotates the epoch into recovering.
+						// Claims cannot discover that replacement; Active can.
+						w.requestRecovery()
+					}
 					return
 				}
 				backoff = nextBackoff(
