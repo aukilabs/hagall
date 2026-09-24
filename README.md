@@ -129,6 +129,21 @@ require a restart; active assignments remain fenced to their provider session.
 The DMS database downgrade refuses persisted capacities above 256, including ended
 session history; retain the newer schema while those records remain.
 
+## Reservation recovery
+
+When DMS rejects an assignment heartbeat with a conflict, the relay removes the
+old fenced authority and schedules an authoritative Active reconciliation.
+This discovers requester-triggered epoch rotations into `recovering`, which
+ordinary booking claims do not return. The existing Recover/Ready exchange
+restores the reservation; no new requester booking is required.
+
+Recovery scans coalesce conflict bursts behind a five-second delay and retry
+failed or ambiguous responses with bounded backoff. Healthy operation does not
+poll Active. Recovery is independent of capacity and the new-booking gate, but
+joins the same claim/drain barrier and starts no new pass once draining begins. The
+five-second delay starts after conflict detection, not after the initial
+disconnect; heartbeat timing and requester polling still affect total recovery.
+
 ## Source snapshot
 
 Copied from `aukilabs/domain-service`, branch `feature/dds-p2p-demo`, commit
