@@ -453,6 +453,88 @@ func TestBookedACLRequiresSourceAdmissionAndRevokesOnlyExactTarget(t *testing.T)
 	require.Equal(t, network.Limited, source.Network().Connectedness(targetIDs[1]), "healthy sibling circuit must remain connected")
 }
 
+// Models the load-test ordering: a source loses its reservation connection,
+// reconnects and sends to another booked peer before its old assignment is
+// revoked. Revocation is peer-wide and also interrupts that new outbound path.
+func TestSourceBookingRevocationClosesReconnectedOutboundCircuit(t *testing.T) {
+	now := time.Now().UTC()
+	registry, err := booking.New(booking.Config{MaximumBookings: 2, MaximumAdmissions: 2, AdmissionTTL: 30 * time.Second})
+	require.NoError(t, err)
+	sessionID := uuid.New()
+	require.NoError(t, registry.SetSession(booking.Session{
+		ProviderSessionID: sessionID, EffectiveCapacity: 2,
+		SessionExpiresAt: now.Add(time.Hour), NodeJWTExpiresAt: now.Add(time.Hour),
+	}))
+	options := testOptions(t, 2)
+	options.ACL = booking.NewACL(registry)
+	service, err := New(options)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = service.Close() })
+	source, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/0"))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = source.Close() })
+	target, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/0"))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = target.Close() })
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	domain := uuid.New()
+	var sourceFence booking.Fence
+	for _, client := range []host.Host{source, target} {
+		authority := booking.Authority{
+			BookingID: uuid.New(), SlotID: uuid.New(), DomainID: domain, TargetPeerID: client.ID(),
+			Fence:          booking.Fence{ProviderSessionID: sessionID, AssignmentID: uuid.New(), ReservationEpoch: uuid.New()},
+			RequestedUntil: now.Add(time.Hour), AuthorityExpiresAt: now.Add(time.Hour), ProviderLeaseExpiresAt: now.Add(time.Hour),
+		}
+		require.NoError(t, registry.InstallStarting(authority))
+		require.NoError(t, registry.ActivateReady(client.ID(), authority.Fence))
+		_, err = relayclient.Reserve(ctx, client, internalRelayInfo(service))
+		require.NoError(t, err)
+		if client == source {
+			sourceFence = authority.Fence
+		}
+	}
+	oldConnections := source.Network().ConnsToPeer(service.Host().ID())
+	require.Len(t, oldConnections, 1)
+	require.NoError(t, source.Network().ClosePeer(service.Host().ID()))
+	require.Eventually(t, func() bool { return len(service.Host().Network().ConnsToPeer(source.ID())) == 0 }, time.Second, time.Millisecond)
+	require.NoError(t, source.Connect(ctx, internalRelayInfo(service)))
+	require.NotEqual(t, oldConnections[0].ID(), source.Network().ConnsToPeer(service.Host().ID())[0].ID())
+	snapshot, ok := registry.SnapshotForAdmission(target.ID(), domain)
+	require.True(t, ok)
+	_, err = registry.Admit(booking.AdmissionRequest{
+		SourcePeerID: source.ID(), DomainID: domain, TargetPeerID: target.ID(),
+		ExpectedFence: snapshot.Authority.Fence, LiteralJWTExpiresAt: now.Add(time.Minute),
+	})
+	require.NoError(t, err)
+	const testProtocol = protocol.ID("/auki-test/reconnected-source/1")
+	target.SetStreamHandler(testProtocol, func(stream network.Stream) {
+		defer stream.Close()
+		_, _ = io.Copy(stream, stream)
+	})
+	require.NoError(t, source.Connect(ctx, peer.AddrInfo{ID: target.ID(), Addrs: []ma.Multiaddr{circuitTargetAddress(t, service.Host().ID(), target.ID())}}))
+	stream, err := source.NewStream(network.WithAllowLimitedConn(ctx, "reconnected source"), target.ID(), testProtocol)
+	require.NoError(t, err)
+	defer stream.Close()
+	require.NoError(t, stream.SetDeadline(time.Now().Add(5*time.Second)))
+	_, err = stream.Write([]byte{42})
+	require.NoError(t, err)
+	var reply [1]byte
+	_, err = io.ReadFull(stream, reply[:])
+	require.NoError(t, err)
+	require.Equal(t, byte(42), reply[0])
+	removed, ok := registry.RemoveExact(source.ID(), sourceFence)
+	require.True(t, ok)
+	require.NoError(t, service.Host().Network().ClosePeer(removed))
+	_, err = io.ReadFull(stream, reply[:])
+	require.Error(t, err)
+	if timeout, ok := err.(net.Error); ok {
+		require.False(t, timeout.Timeout(), "revocation must close the circuit, not merely reach its deadline")
+	}
+	_, ok = registry.SnapshotForAdmission(target.ID(), domain)
+	require.True(t, ok, "the destination's booking remains valid")
+}
+
 func circuitTargetAddress(t *testing.T, relayID, targetID peer.ID) ma.Multiaddr {
 	t.Helper()
 	address, err := ma.NewMultiaddr("/p2p/" + relayID.String() + "/p2p-circuit/p2p/" + targetID.String())
