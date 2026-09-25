@@ -78,8 +78,10 @@ jobs:
           go mod verify
       - name: Test
         run: make test
+      - name: Check reservation concurrency
+        run: go test -mod=vendor -race -p 1 ./pkg/node
       - name: Check formatting and module files
-        run: git diff --exit-code -- cmd pkg go.mod go.sum
+        run: git diff --exit-code -- cmd pkg scripts go.mod go.sum
       - name: Build
         run: make build
       - name: Vendor image dependencies
@@ -87,7 +89,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.module-token.outputs.token }}
         run: |
-          go mod vendor
+          make go-vendor
           git diff --exit-code -- go.mod go.sum
       - name: Set up QEMU
         if: startsWith(github.ref, 'refs/tags/')
