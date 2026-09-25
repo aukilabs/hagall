@@ -3,10 +3,12 @@ hagall:
   fullnameOverride: auki-relay-node
 
   relay:
-    capacity: 128
+    capacity: 2048
+    maxCircuitsPerPeer: 128
     acceptBookings: true
     authConcurrency: 128
-    authAttemptsPerIP: 128
+    # Requires the independent source-auth budget fix; keep concurrency at 128.
+    authAttemptsPerIP: 512
     authAttemptsPerPeer: 128
 
   podMonitor:
