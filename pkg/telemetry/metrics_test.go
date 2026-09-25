@@ -19,6 +19,10 @@ func TestMetricsExposeOnlyBoundedLabelsAndActiveCounts(t *testing.T) {
 	metrics.ObserveACL(ACLConnect, false)
 	metrics.ObserveACL(ACLAction("peer-id-must-not-be-a-label"), true)
 	metrics.ObserveSourceAuth(SourceAuthAccepted)
+	for _, outcome := range []SourceAuthOutcome{SourceAuthRateLimited, SourceAuthBusy, SourceAuthCacheFull, SourceAuthContextDone} {
+		metrics.ObserveSourceAuth(outcome)
+		require.Equal(t, float64(1), metricValue(t, registry, "auki_relay_node_source_auth_total", map[string]string{"outcome": string(outcome)}))
+	}
 	metrics.ObserveSourceAuth(SourceAuthOutcome("domain-must-not-be-a-label"))
 	metrics.ObserveProviderOperation(ProviderClaim, OperationSuccess)
 	metrics.ObserveBookingEvent(BookingExpired)

@@ -294,7 +294,7 @@ func TestValidationRejectsUnsafeCrossFieldConfigurations(t *testing.T) {
 		{name: "key staleness", contains: "staleness", mutate: func(c *Config) { c.VerificationKeys.MaxStaleness = 30 * time.Minute }},
 		{name: "unknown refresh", contains: "unknown-signature", mutate: func(c *Config) { c.VerificationKeys.UnknownRefreshInterval = 3 * time.Minute }},
 		{name: "admission TTL", contains: "admission TTL", mutate: func(c *Config) { c.Admission.TTL = 31 * time.Second }},
-		{name: "auth peer concurrency", contains: "must not exceed", mutate: func(c *Config) { c.Admission.AttemptsPerPeer = 65 }},
+		{name: "auth zero attempts", contains: "must be positive", mutate: func(c *Config) { c.Admission.AttemptsPerPeer = 0 }},
 		{name: "capacity below range", contains: "local relay capacity", mutate: func(c *Config) { c.Relay.LocalCapacity = 0 }},
 		{name: "capacity above range", contains: "local relay capacity", mutate: func(c *Config) { c.Relay.LocalCapacity = 257 }},
 		{name: "DDS capacity below range", contains: "DDS max_concurrency", mutate: func(c *Config) { value := 0; c.Relay.DDSMaxConcurrency = &value }},
@@ -475,4 +475,16 @@ func TestConfiguredCapacityRequiresMatchingConnectionBudgets(t *testing.T) {
 			require.ErrorContains(t, err, "maximum circuits per peer must be in [1,256]")
 		})
 	}
+}
+
+func TestAuthAttemptBudgetIsIndependentOfConcurrency(t *testing.T) {
+	values := requiredEnvironment(t)
+	values["RELAY_AUTH_MAX_CONCURRENCY"] = "128"
+	values["RELAY_AUTH_MAX_ATTEMPTS_PER_IP"] = "512"
+	values["RELAY_AUTH_MAX_ATTEMPTS_PER_PEER"] = "256"
+	cfg, err := LoadFrom(lookupMap(values))
+	require.NoError(t, err)
+	require.Equal(t, 128, cfg.Admission.AuthConcurrency)
+	require.Equal(t, 512, cfg.Admission.AttemptsPerIP)
+	require.Equal(t, 256, cfg.Admission.AttemptsPerPeer)
 }
