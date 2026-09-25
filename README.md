@@ -153,3 +153,18 @@ Copied from `aukilabs/domain-service`, branch `feature/dds-p2p-demo`, commit
 were extracted from `pkg/authpkg` and `pkg/models/node.go`; imports now use
 `github.com/aukilabs/hagall`. The original source is available at the recorded
 commit; its standalone relay tree has since been removed from `domain-service`.
+
+## Source authentication budgets
+
+`RELAY_AUTH_MAX_ATTEMPTS_PER_IP` and `RELAY_AUTH_MAX_ATTEMPTS_PER_PEER`
+limit attempts in `RELAY_AUTH_ATTEMPT_WINDOW`; they are independent of
+`RELAY_AUTH_MAX_CONCURRENCY`, which bounds simultaneous authentication work.
+For clients sharing an egress IP, a 512-attempt IP budget over 10 seconds can
+coexist with 128 concurrent authentications and a 128-attempt per-peer budget.
+The attempt cache and handshake lifetime remain independently bounded.
+
+Private `auki_relay_node_source_auth_total` outcomes distinguish `rate_limited`
+from `busy` (concurrency), `cache_full` (identity cardinality), and `context_done`
+(shutdown/cancellation before verification). Older versions grouped all of these
+under `rate_limited`. All still return the same token-free wire denial; clients
+must not infer an authentication-versus-overload reason from that response.

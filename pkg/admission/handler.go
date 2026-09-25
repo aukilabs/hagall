@@ -130,12 +130,21 @@ func (h *Handler) HandleStream(stream network.Stream) {
 	}
 	bounded, release, err := h.limiter.Acquire(h.context, source, remoteIP, h.now().UTC())
 	if err != nil {
-		h.deny(stream, telemetry.SourceAuthRateLimited)
+		outcome := telemetry.SourceAuthInvalidPeer
+		switch {
+		case errors.Is(err, ErrRateLimited):
+			outcome = telemetry.SourceAuthRateLimited
+		case errors.Is(err, ErrBusy):
+			outcome = telemetry.SourceAuthBusy
+		case errors.Is(err, ErrCacheFull):
+			outcome = telemetry.SourceAuthCacheFull
+		}
+		h.deny(stream, outcome)
 		return
 	}
 	defer release()
 	if err := bounded.Err(); err != nil {
-		h.deny(stream, telemetry.SourceAuthRateLimited)
+		h.deny(stream, telemetry.SourceAuthContextDone)
 		return
 	}
 

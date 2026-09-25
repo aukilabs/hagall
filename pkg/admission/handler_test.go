@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net/netip"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/aukilabs/hagall/pkg/authpkg"
 	"github.com/aukilabs/hagall/pkg/booking"
+	"github.com/aukilabs/hagall/pkg/telemetry"
 	"github.com/aukilabs/hagall/pkg/verification"
 	"github.com/aukilabs/service-lib/pkg/tokenclaims"
 	"github.com/golang-jwt/jwt/v4"
@@ -31,6 +33,66 @@ import (
 )
 
 type verifierFunc func(context.Context, string, time.Time, time.Duration) (*authpkg.P2PAccessTokenClaims, time.Time, error)
+
+type authObserver chan telemetry.SourceAuthOutcome
+
+func (o authObserver) ObserveSourceAuth(outcome telemetry.SourceAuthOutcome) { o <- outcome }
+
+func TestHandlerDistinguishesLimiterFailuresWithTheSameWireDenial(t *testing.T) {
+	for _, outcome := range []telemetry.SourceAuthOutcome{
+		telemetry.SourceAuthRateLimited, telemetry.SourceAuthBusy,
+		telemetry.SourceAuthCacheFull, telemetry.SourceAuthContextDone,
+	} {
+		t.Run(string(outcome), func(t *testing.T) {
+			fixture := newHandlerFixture(t)
+			limiter, err := New(Config{
+				TTL: time.Second, MaximumEntries: 2, Concurrency: 1,
+				AttemptsPerPeer: 2, AttemptsPerIP: 2, AttemptWindow: time.Minute,
+			})
+			require.NoError(t, err)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			ip := netip.MustParseAddr("127.0.0.1")
+			switch outcome {
+			case telemetry.SourceAuthRateLimited:
+				for range 2 {
+					_, release, err := limiter.Acquire(ctx, fixture.client.ID(), ip, fixture.now)
+					require.NoError(t, err)
+					release()
+				}
+			case telemetry.SourceAuthBusy:
+				_, release, err := limiter.Acquire(ctx, fixture.client.ID(), ip, fixture.now)
+				require.NoError(t, err)
+				defer release()
+			case telemetry.SourceAuthCacheFull:
+				_, release, err := limiter.Acquire(ctx, fixture.target, netip.MustParseAddr("192.0.2.1"), fixture.now)
+				require.NoError(t, err)
+				release()
+			case telemetry.SourceAuthContextDone:
+				cancel()
+			}
+			observed := make(authObserver, 1)
+			handler, err := NewHandler(HandlerOptions{
+				Context: ctx, Limiter: limiter, Registry: fixture.registry,
+				Verifier: verifierFunc(func(context.Context, string, time.Time, time.Duration) (*authpkg.P2PAccessTokenClaims, time.Time, error) {
+					t.Error("rejected admission must not reach verification")
+					return nil, time.Time{}, errors.New("unexpected verification")
+				}),
+				Now: func() time.Time { return fixture.now }, Observer: observed,
+			})
+			require.NoError(t, err)
+			fixture.server.SetStreamHandler(ProtocolID, handler.HandleStream)
+			payload := encodeRequest(t, fixture.domain, fixture.target, "token")
+			require.Equal(t, deniedResponse, exchangePayload(t, fixture.client, fixture.server.ID(), payload))
+			select {
+			case got := <-observed:
+				require.Equal(t, outcome, got)
+			case <-time.After(time.Second):
+				t.Fatal("missing admission outcome")
+			}
+		})
+	}
+}
 
 const rustSourceAdmissionRequestVector = `{"version":1,"domain_id":"11111111-2222-3333-4444-555555555555","target_peer_id":"12D3KooWBMyph6PCuP6GUJkwFdR7bLUPZ3exLvgEPpR93J52GaJg","p2p_access_token":"header.payload.signature"}`
 

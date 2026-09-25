@@ -31,9 +31,6 @@ func (c Config) Validate() error {
 	if c.TTL <= 0 || c.MaximumEntries < 2 || c.Concurrency <= 0 || c.AttemptsPerPeer <= 0 || c.AttemptsPerIP <= 0 || c.AttemptWindow <= 0 {
 		return errors.New("relay authentication limits must be positive and cache capacity must be at least two")
 	}
-	if c.AttemptsPerPeer > c.Concurrency || c.AttemptsPerIP > c.Concurrency {
-		return errors.New("per-peer and per-IP attempts must not exceed total concurrency")
-	}
 	return nil
 }
 
