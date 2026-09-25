@@ -2,6 +2,8 @@ FROM --platform=$BUILDPLATFORM golang:1.23 AS build
 WORKDIR /app
 COPY go.mod go.sum ./
 COPY vendor/ ./vendor/
+COPY scripts/patch-relay.go ./scripts/patch-relay.go
+RUN go run -mod=vendor ./scripts/patch-relay.go -check
 COPY cmd/ ./cmd/
 COPY pkg/ ./pkg/
 ARG TARGETOS
