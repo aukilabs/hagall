@@ -124,8 +124,17 @@ transport and heartbeats without relinquishing, waits the actual DMS recovery
 deadline (up to five minutes, capped by booking authority), and verifies SDK renewal/reassignment plus accounting for both payees.
 Add `--evm --safe-service` on Docker Desktop for macOS to continue those same
 earnings through an actual Safe service, two approvals and provider token claims.
-This exercises transport and the provider lifecycle; DDS registration/SIWE,
-application bootstrap, WSS ingress and aggregate capacity need separate tests.
+The runner also starts the native SDK facade over WSS. Each node's plaintext WS
+listener sits behind a loopback TLS reverse proxy with an ephemeral CA. The SDK
+verifies the certificate; untrusted issuers and wrong hostnames must fail. The
+fixture records successful HTTP upgrades to prove traffic used the TLS ingress.
+App credential refresh, same-Peer-ID persistent restart and expiry during a DDS
+outage must preserve billing boundaries and release holds. Select only that path
+with `--transport-scenario identity`; `failover` selects the TCP scenario.
+
+DDS registration/SIWE, real API/DDS issuance, browser execution, hosted ingress
+configuration and aggregate capacity need separate tests. The CA and private
+keys exist only in the disposable fixture; no machine trust store is changed.
 
 ## Capacity
 

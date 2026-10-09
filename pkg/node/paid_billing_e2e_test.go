@@ -2,14 +2,24 @@ package node
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	cryptorand "crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"math/rand/v2"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -44,8 +54,11 @@ func TestPaidRelayTransportService(t *testing.T) {
 	defer cancel()
 	var peers []string
 	var stops []context.CancelFunc
+	certificate, ca := paidTransportCertificate(t)
+	require.NoError(t, os.WriteFile(ready+".ca.der", ca, 0600))
+	var upgrades atomic.Int64
 	for index := range 2 {
-		id, stop := paidTransportProvider(t, ctx, fixture, dms, index)
+		id, stop := paidTransportProvider(t, ctx, fixture, dms, index, certificate, &upgrades)
 		peers = append(peers, id)
 		stops = append(stops, stop)
 	}
@@ -59,6 +72,12 @@ func TestPaidRelayTransportService(t *testing.T) {
 		case <-ctx.Done():
 			t.Fatal("runner failed to stop relay fixture")
 		case <-tick.C:
+			// Public, nonsecret evidence that the native WSS clients actually
+			// completed TLS + HTTP Upgrade through the ingress fixture.
+			stats, err := json.Marshal(map[string]int64{"wss_upgrades": upgrades.Load()})
+			require.NoError(t, err)
+			require.NoError(t, os.WriteFile(ready+".tls.tmp", stats, 0600))
+			require.NoError(t, os.Rename(ready+".tls.tmp", ready+".tls.json"))
 			if _, err := os.Stat(ready + ".stop"); err == nil {
 				return
 			}
@@ -77,7 +96,7 @@ func TestPaidRelayTransportService(t *testing.T) {
 	}
 }
 
-func paidTransportProvider(t *testing.T, parent context.Context, fixture, dms string, index int) (string, context.CancelFunc) {
+func paidTransportProvider(t *testing.T, parent context.Context, fixture, dms string, index int, certificate tls.Certificate, upgrades *atomic.Int64) (string, context.CancelFunc) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(parent)
 	options := testOptions(t, 8)
@@ -94,6 +113,22 @@ func paidTransportProvider(t *testing.T, parent context.Context, fixture, dms st
 		publicSuffix := ""
 		if suffix != "" {
 			publicSuffix = "/wss"
+			// Hagall owns plaintext WS; production ingress terminates TLS.
+			// The ephemeral local ingress keeps that boundary intact.
+			upstream, err := url.Parse(fmt.Sprintf("http://127.0.0.1:%d", port))
+			require.NoError(t, err)
+			proxy := httputil.NewSingleHostReverseProxy(upstream)
+			proxy.ModifyResponse = func(response *http.Response) error {
+				if response.StatusCode == http.StatusSwitchingProtocols {
+					upgrades.Add(1)
+				}
+				return nil
+			}
+			ingress := httptest.NewUnstartedServer(proxy)
+			ingress.TLS = &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{certificate}}
+			ingress.StartTLS()
+			t.Cleanup(ingress.Close)
+			port = ingress.Listener.Addr().(*net.TCPAddr).Port
 		}
 		bases = append(bases, fmt.Sprintf("/dns4/relay-%d.interop.aukiverse.com/tcp/%d%s/p2p/%s", index, port, publicSuffix, id))
 	}
@@ -184,4 +219,24 @@ func paidTransportProvider(t *testing.T, parent context.Context, fixture, dms st
 	}
 	t.Cleanup(stop)
 	return id.String(), stop
+}
+
+func paidTransportCertificate(t *testing.T) (tls.Certificate, []byte) {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), cryptorand.Reader)
+	require.NoError(t, err)
+	ca := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "disposable relay fixture CA"},
+		NotBefore: time.Now().Add(-time.Minute), NotAfter: time.Now().Add(time.Hour),
+		IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign}
+	caDER, err := x509.CreateCertificate(cryptorand.Reader, ca, ca, &key.PublicKey, key)
+	require.NoError(t, err)
+	leafKey, err := ecdsa.GenerateKey(elliptic.P256(), cryptorand.Reader)
+	require.NoError(t, err)
+	leaf := &x509.Certificate{SerialNumber: big.NewInt(2),
+		DNSNames:  []string{"relay-0.interop.aukiverse.com", "relay-1.interop.aukiverse.com"},
+		NotBefore: ca.NotBefore, NotAfter: ca.NotAfter, KeyUsage: x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}
+	leafDER, err := x509.CreateCertificate(cryptorand.Reader, leaf, ca, &leafKey.PublicKey, key)
+	require.NoError(t, err)
+	return tls.Certificate{Certificate: [][]byte{leafDER, caDER}, PrivateKey: leafKey}, caDER
 }
