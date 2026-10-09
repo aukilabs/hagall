@@ -105,6 +105,28 @@ Run `make chart-deps chart-check` to fetch the pinned chart, lint it, and render
 the wrapper locally with fixtures.
 Image-publishing workflows still do not trigger deployment.
 
+## Local paid-booking integration
+
+`pkg/node/paid_billing_e2e_test.go` is an opt-in fixture for the companion NCS
+runner. It starts two real Hagall nodes with the production booking registry,
+signature verifier, admission handler, provider worker and DMS HTTP client. It
+does not replace the relay ACL with an allow-all fixture. From the compatible NCS
+checkout, with Docker, Go and Rust:
+
+```sh
+python3 scripts/test_relay_billing_e2e.py --dms-repo ../domain-manager-service \
+  --sdk-repo ../auki-sdk --hagall-repo ../hagall
+```
+
+The runner uses disposable databases, signed local identity/eligibility fixtures
+and an isolated DNS resolver. It sends native TCP traffic, cuts the active node's
+transport and heartbeats without relinquishing, waits the actual DMS recovery
+deadline (up to five minutes, capped by booking authority), and verifies SDK renewal/reassignment plus accounting for both payees.
+Add `--evm --safe-service` on Docker Desktop for macOS to continue those same
+earnings through an actual Safe service, two approvals and provider token claims.
+This exercises transport and the provider lifecycle; DDS registration/SIWE,
+application bootstrap, WSS ingress and aggregate capacity need separate tests.
+
 ## Capacity
 
 Provider booking/reservation capacity is configuration, not a fixed 2048-slot
