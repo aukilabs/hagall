@@ -26,6 +26,9 @@ const (
 	SourceAuthAccepted       SourceAuthOutcome = "accepted"
 	SourceAuthInvalidPeer    SourceAuthOutcome = "invalid_peer"
 	SourceAuthRateLimited    SourceAuthOutcome = "rate_limited"
+	SourceAuthBusy           SourceAuthOutcome = "busy"
+	SourceAuthCacheFull      SourceAuthOutcome = "cache_full"
+	SourceAuthContextDone    SourceAuthOutcome = "context_done"
 	SourceAuthMalformed      SourceAuthOutcome = "malformed"
 	SourceAuthUnbooked       SourceAuthOutcome = "unbooked"
 	SourceAuthInvalidToken   SourceAuthOutcome = "invalid_token"
@@ -291,6 +294,7 @@ func validACLAction(value ACLAction) bool {
 func validSourceAuthOutcome(value SourceAuthOutcome) bool {
 	switch value {
 	case SourceAuthAccepted, SourceAuthInvalidPeer, SourceAuthRateLimited,
+		SourceAuthBusy, SourceAuthCacheFull, SourceAuthContextDone,
 		SourceAuthMalformed, SourceAuthUnbooked, SourceAuthInvalidToken,
 		SourceAuthIdentityDenied, SourceAuthCapacityDenied, SourceAuthWriteFailed:
 		return true

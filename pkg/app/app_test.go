@@ -380,6 +380,114 @@ func newControlPlaneTestApplication(cfg config.Config, access ddsclient.Access, 
 	}
 }
 
+func newAvailabilityTestApplication(t *testing.T) (*Application, *orderedProviderDMS) {
+	t.Helper()
+	now := time.Now().UTC()
+	cfg := config.Defaults()
+	cfg.AcceptBookings = true
+	app := newControlPlaneTestApplication(cfg, ddsclient.Access{}, nil)
+	app.logger = slog.Default()
+	app.access = ddsclient.Access{Token: "test-node-token", IssuedAt: now, ExpiresAt: now.Add(time.Hour), SchedulingRevision: 1}
+	app.session = dmsclient.Session{
+		ProviderSessionID: uuid.New(), Status: dmsclient.ProviderStatus{AcceptingBookings: true},
+		EffectiveCapacity: 32, SchedulingRevision: 1, Metadata: app.metadata,
+		SessionExpiresAt: now.Add(time.Hour), ProviderNodeJWTExpiresAt: now.Add(time.Hour), RecoveryGrace: 30 * time.Minute,
+	}
+	app.startupComplete, app.dataPlaneReady, app.controlReady, app.keyReady = true, true, true, true
+	app.keyExpiresAt, app.tokenExpiresAt = now.Add(time.Hour), now.Add(time.Hour)
+	app.sessionExpiresAt, app.sessionTokenExpiresAt = now.Add(time.Hour), now.Add(time.Hour)
+	dms := &orderedProviderDMS{session: app.session}
+	app.providerDMS = dms
+	registry, err := booking.New(booking.Config{MaximumBookings: 32, MaximumAdmissions: 32, AdmissionTTL: 30 * time.Second})
+	require.NoError(t, err)
+	app.registry = registry
+	app.worker, err = provider.New(provider.Options{
+		DMS: dms, Registry: registry, Metadata: app.metadata, ClosePeer: func(peer.ID) error { return nil },
+		Config: provider.Config{InitialBackoff: time.Millisecond, MaximumBackoff: time.Second,
+			HeartbeatMinimumFraction: 0.25, HeartbeatMaximumFraction: 0.35,
+			ExpirySweepInterval: time.Second, Now: time.Now, Random: func() float64 { return 0 }},
+	})
+	require.NoError(t, err)
+	require.NoError(t, app.worker.SetControl(app.access.Token, app.session))
+	app.worker.SetAccepting(true)
+	return app, dms
+}
+
+func TestAvailabilityKeepsSafetyTransitionsImmediate(t *testing.T) {
+	for _, change := range []struct {
+		name  string
+		apply func(*Application)
+	}{
+		{"capacity saturated", func(a *Application) {
+			for i := 0; i < 32; i++ {
+				now := time.Now().UTC()
+				require.NoError(t, a.registry.InstallStarting(booking.Authority{
+					BookingID: uuid.New(), SlotID: uuid.New(), DomainID: uuid.New(), TargetPeerID: peer.ID(uuid.NewString()),
+					Fence:          booking.Fence{ProviderSessionID: a.session.ProviderSessionID, AssignmentID: uuid.New(), ReservationEpoch: uuid.New()},
+					RequestedUntil: now.Add(time.Hour), AuthorityExpiresAt: now.Add(time.Hour), ProviderLeaseExpiresAt: now.Add(time.Hour),
+				}))
+			}
+		}},
+		{"data plane lost", func(a *Application) { a.dataPlaneReady = false }},
+		{"authority expired", func(a *Application) { a.tokenExpiresAt = time.Now().Add(-time.Second) }},
+		{"draining", func(a *Application) { a.draining = true }},
+		{"reconcile required", func(a *Application) { a.worker.SetAccepting(false) }},
+		{"capacity regained", func(a *Application) { a.session.Status.AcceptingBookings = false; a.worker.SetAccepting(false) }},
+	} {
+		t.Run(change.name, func(t *testing.T) {
+			app, _ := newAvailabilityTestApplication(t)
+			require.False(t, app.availabilityStatusChanged(time.Now().UTC()))
+			change.apply(app)
+			require.True(t, app.availabilityStatusChanged(time.Now().UTC()))
+			if !app.providerAcceptanceEligible(time.Now().UTC()) {
+				require.False(t, app.worker.Accepting())
+			}
+		})
+	}
+}
+
+func TestControlLoopCoalescesAvailabilityWithoutPostponingPeriodicStatus(t *testing.T) {
+	app, dms := newAvailabilityTestApplication(t)
+	app.config.Timing.StatusInterval = 500 * time.Millisecond
+	ctx, cancel := context.WithCancel(context.Background())
+	app.context, app.cancel = ctx, cancel
+	app.errors = make(chan error, 1)
+	done := make(chan struct{})
+	go func() { defer close(done); app.controlLoop() }()
+	t.Cleanup(func() { cancel(); <-done })
+	// Repeated capacity changes leave accepting=true. They must neither send a
+	// status per change nor keep resetting the normal session-refresh deadline.
+	session := app.session
+	for i := 0; i < 20; i++ {
+		session.EffectiveCapacity = uint32(31 + i%2)
+		require.NoError(t, app.worker.SetControl(app.access.Token, session))
+		time.Sleep(time.Millisecond)
+	}
+	require.Never(t, func() bool { return len(dms.snapshot()) > 0 }, 50*time.Millisecond, time.Millisecond)
+	stopChanges := make(chan struct{})
+	changesDone := make(chan struct{})
+	token := app.access.Token
+	go func() {
+		defer close(changesDone)
+		ticker := time.NewTicker(time.Millisecond)
+		defer ticker.Stop()
+		for i := 0; ; i++ {
+			select {
+			case <-stopChanges:
+				return
+			case <-ticker.C:
+				session.EffectiveCapacity = uint32(31 + i%2)
+				if err := app.worker.SetControl(token, session); err != nil {
+					return
+				}
+			}
+		}
+	}()
+	t.Cleanup(func() { close(stopChanges); <-changesDone })
+	require.Eventually(t, func() bool { return len(dms.snapshot()) > 0 }, time.Second, time.Millisecond)
+	require.Equal(t, []string{"status:true"}, dms.snapshot())
+}
+
 type blockingStatusDMS struct {
 	started chan struct{}
 	release chan struct{}

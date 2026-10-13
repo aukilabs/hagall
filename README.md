@@ -59,6 +59,29 @@ make build  # bin/auki-relay-node; override VERSION with a semantic version
 make test  # formatting, vet, and tests
 ```
 
+These targets generate vendored dependencies and apply a version-checked
+backport for go-libp2p v0.41.1. Its relay disconnect callback rechecks peer
+connectedness under the reservation mutex, preventing an old connection's
+cleanup from deleting a newly accepted reservation. The quick initial check
+remains; expiry, admission and circuit limits are unchanged.
+
+`scripts/patch-relay.go` verifies the upstream and patched file checksums and
+rejects unexpected dependency versions or source changes. Generated vendor files
+remain untracked. Review and remove the backport once the dependency contains an
+equivalent fix. After running `make go-vendor`, direct Go commands should use
+`-mod=vendor`; `-mod=mod` bypasses the backport. The container build rejects
+unpatched vendor input. No dependency version or wire contract changes.
+
+The regression `TestReservationDisconnectPreservesReplacement` uses actual
+loopback reservation and circuit messages. It delays an old disconnect callback
+while a replacement reserves, then requires the new reservation to survive.
+After `make go-vendor`, run:
+
+```sh
+go test -mod=vendor -race -count=20 \
+  -run TestReservationDisconnectPreservesReplacement ./pkg/node
+```
+
 GitHub Actions runs these checks on pushes to `main`, `feature/*`, `bug/*`,
 `chore/*`, and `hotfix/*`, and supports manual runs. It uses Go 1.23 and the
 existing `GLOBAL_PUBLIC_GITHUB_APP_ID` / `GLOBAL_PUBLIC_GITHUB_APP_PRIVATE_KEY`
@@ -84,7 +107,7 @@ using the existing `DOCKER_USERNAME` and `DOCKER_PASSWORD` Actions secrets.
 To build the container locally after configuring private-module access:
 
 ```sh
-go mod vendor
+make go-vendor
 docker build --build-arg VERSION=v0.0.0 -t hagall:local .
 ```
 
@@ -129,6 +152,21 @@ require a restart; active assignments remain fenced to their provider session.
 The DMS database downgrade refuses persisted capacities above 256, including ended
 session history; retain the newer schema while those records remain.
 
+## Reservation recovery
+
+When DMS rejects an assignment heartbeat with a conflict, the relay removes the
+old fenced authority and schedules an authoritative Active reconciliation.
+This discovers requester-triggered epoch rotations into `recovering`, which
+ordinary booking claims do not return. The existing Recover/Ready exchange
+restores the reservation; no new requester booking is required.
+
+Recovery scans coalesce conflict bursts behind a five-second delay and retry
+failed or ambiguous responses with bounded backoff. Healthy operation does not
+poll Active. Recovery is independent of capacity and the new-booking gate, but
+joins the same claim/drain barrier and starts no new pass once draining begins. The
+five-second delay starts after conflict detection, not after the initial
+disconnect; heartbeat timing and requester polling still affect total recovery.
+
 ## Source snapshot
 
 Copied from `aukilabs/domain-service`, branch `feature/dds-p2p-demo`, commit
@@ -138,3 +176,18 @@ Copied from `aukilabs/domain-service`, branch `feature/dds-p2p-demo`, commit
 were extracted from `pkg/authpkg` and `pkg/models/node.go`; imports now use
 `github.com/aukilabs/hagall`. The original source is available at the recorded
 commit; its standalone relay tree has since been removed from `domain-service`.
+
+## Source authentication budgets
+
+`RELAY_AUTH_MAX_ATTEMPTS_PER_IP` and `RELAY_AUTH_MAX_ATTEMPTS_PER_PEER`
+limit attempts in `RELAY_AUTH_ATTEMPT_WINDOW`; they are independent of
+`RELAY_AUTH_MAX_CONCURRENCY`, which bounds simultaneous authentication work.
+For clients sharing an egress IP, a 512-attempt IP budget over 10 seconds can
+coexist with 128 concurrent authentications and a 128-attempt per-peer budget.
+The attempt cache and handshake lifetime remain independently bounded.
+
+Private `auki_relay_node_source_auth_total` outcomes distinguish `rate_limited`
+from `busy` (concurrency), `cache_full` (identity cardinality), and `context_done`
+(shutdown/cancellation before verification). Older versions grouped all of these
+under `rate_limited`. All still return the same token-free wire denial; clients
+must not infer an authentication-versus-overload reason from that response.

@@ -802,10 +802,9 @@ func (a *Application) controlLoop() {
 			return
 		case <-availabilityChanged:
 			timer.Stop()
-			if !a.providerAcceptanceEligible(time.Now().UTC()) {
-				a.setProviderAccepting(false)
+			if a.availabilityStatusChanged(time.Now().UTC()) {
+				nextStatus = time.Now().UTC()
 			}
-			nextStatus = time.Now().UTC()
 		case <-timer.C:
 		}
 
@@ -868,6 +867,33 @@ func (a *Application) controlLoop() {
 			nextStatus = time.Now().UTC().Add(a.config.Timing.StatusInterval)
 		}
 	}
+}
+
+// Occupancy changes still update local metrics immediately. Only a change in
+// advertised eligibility (or a required reconciliation) advances the periodic
+// DMS status deadline; ordinary claims must not renew an unchanged status.
+func (a *Application) availabilityStatusChanged(now time.Time) bool {
+	eligible := a.providerAcceptanceEligible(now)
+	if !eligible {
+		a.setProviderAccepting(false)
+	} else {
+		a.publishSchedulingState()
+	}
+	desired := a.providerStatus(eligible)
+	a.currentMu.RLock()
+	reported := a.session.Status
+	a.currentMu.RUnlock()
+	return desired.AcceptingBookings != reported.AcceptingBookings ||
+		desired.Draining != reported.Draining ||
+		!sameShutdownIntent(desired.ShutdownIntent, reported.ShutdownIntent) ||
+		(eligible && a.worker != nil && !a.worker.Accepting())
+}
+
+func sameShutdownIntent(left, right *string) bool {
+	if left == nil || right == nil {
+		return left == right
+	}
+	return *left == *right
 }
 
 func terminalDMSControlError(err error) bool {

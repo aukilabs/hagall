@@ -383,9 +383,6 @@ func (c Config) Validate() error {
 	if admission.MaximumEntries <= 0 || admission.AuthConcurrency <= 0 || admission.AttemptsPerPeer <= 0 || admission.AttemptsPerIP <= 0 {
 		errs = append(errs, errors.New("admission cardinality, auth concurrency, and attempt limits must be positive"))
 	}
-	if admission.AttemptsPerPeer > admission.AuthConcurrency || admission.AttemptsPerIP > admission.AuthConcurrency {
-		errs = append(errs, errors.New("per-peer and per-IP auth limits must not exceed total auth concurrency"))
-	}
 	if admission.AttemptWindow <= 0 || admission.AttemptWindow > time.Minute {
 		errs = append(errs, errors.New("auth attempt window must be in (0s,1m]"))
 	}
@@ -579,8 +576,8 @@ var environmentMatrix = []EnvSpec{
 	{Name: "RELAY_ADMISSION_MAX_ENTRIES", Default: "4096", Constraint: ">0"},
 	{Name: "RELAY_ADMISSION_TTL", Default: "30s", Constraint: "(0s,30s]"},
 	{Name: "RELAY_AUTH_ATTEMPT_WINDOW", Default: "10s", Constraint: "(0s,1m]"},
-	{Name: "RELAY_AUTH_MAX_ATTEMPTS_PER_IP", Default: "32", Constraint: "1..auth concurrency"},
-	{Name: "RELAY_AUTH_MAX_ATTEMPTS_PER_PEER", Default: "8", Constraint: "1..auth concurrency"},
+	{Name: "RELAY_AUTH_MAX_ATTEMPTS_PER_IP", Default: "32", Constraint: ">0; attempts per window, independent of concurrency"},
+	{Name: "RELAY_AUTH_MAX_ATTEMPTS_PER_PEER", Default: "8", Constraint: ">0; attempts per window, independent of concurrency"},
 	{Name: "RELAY_AUTH_MAX_CONCURRENCY", Default: "64", Constraint: ">0"},
 	{Name: "RELAY_ACCEPT_BOOKINGS", Default: "false", Constraint: "boolean; static operator gate for one process incarnation"},
 	{Name: "RELAY_BUFFER_SIZE", Default: "2048", Constraint: "1..1048576 bytes"},

@@ -84,3 +84,34 @@ func TestLimiterRejectsNewIdentitiesInsteadOfGrowingPastItsBound(t *testing.T) {
 	require.ErrorIs(t, err, ErrCacheFull)
 	require.Equal(t, 2, limiter.CachedEntries())
 }
+
+func TestLimiterAllowsSequentialAttemptsAboveConcurrencyWithoutLiftingAnyBound(t *testing.T) {
+	limiter, err := New(Config{
+		TTL: time.Second, MaximumEntries: 8, Concurrency: 1,
+		AttemptsPerPeer: 3, AttemptsPerIP: 5, AttemptWindow: time.Second,
+	})
+	require.NoError(t, err)
+	now := time.Now()
+	ip := netip.MustParseAddr("192.0.2.1")
+	peerA, peerB, peerC := testPeer(t), testPeer(t), testPeer(t)
+	for range 3 {
+		_, release, err := limiter.Acquire(context.Background(), peerA, ip, now)
+		require.NoError(t, err)
+		release()
+	}
+	_, _, err = limiter.Acquire(context.Background(), peerA, ip, now)
+	require.ErrorIs(t, err, ErrRateLimited, "the per-peer rate still applies")
+	_, release, err := limiter.Acquire(context.Background(), peerB, ip, now)
+	require.NoError(t, err, "a different peer can use the shared IP budget")
+	_, _, err = limiter.Acquire(context.Background(), peerC, ip, now)
+	require.ErrorIs(t, err, ErrBusy, "a larger rate budget must not lift concurrency")
+	release()
+	_, release, err = limiter.Acquire(context.Background(), peerB, ip, now)
+	require.NoError(t, err)
+	release()
+	_, _, err = limiter.Acquire(context.Background(), peerC, ip, now)
+	require.ErrorIs(t, err, ErrRateLimited, "different peers still share the IP rate")
+	_, release, err = limiter.Acquire(context.Background(), peerC, ip, now.Add(time.Second))
+	require.NoError(t, err, "the rate budget recovers at the window boundary")
+	release()
+}
