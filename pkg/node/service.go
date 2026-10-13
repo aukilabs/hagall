@@ -29,7 +29,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const MaxProviderCapacity = 256
+const MaxProviderCapacity = relayconfig.MaxCapacityValue
 
 type Resources struct {
 	Capacity                  int
@@ -55,7 +55,7 @@ func (r Resources) Validate() error {
 		return fmt.Errorf("relay capacity must be between 1 and %d", MaxProviderCapacity)
 	}
 	if r.MaxReservations < r.Capacity || r.MaxReservations > MaxProviderCapacity {
-		return errors.New("maximum reservations must cover local capacity and be at most 256")
+		return fmt.Errorf("maximum reservations must cover local capacity and be at most %d", MaxProviderCapacity)
 	}
 	if r.ReservationTTL != 10*time.Minute {
 		return errors.New("Circuit Relay v2 reservation TTL must be exactly 10 minutes in v1")
@@ -63,8 +63,8 @@ func (r Resources) Validate() error {
 	if r.MaxReservationsPerIP < r.Capacity || r.MaxReservationsPerASN < r.Capacity {
 		return errors.New("per-IP and per-ASN reservation limits must cover local capacity")
 	}
-	if r.MaxCircuitsPerPeer <= 0 || r.BufferBytes <= 0 {
-		return errors.New("circuit and buffer limits must be positive")
+	if r.MaxCircuitsPerPeer <= 0 || r.MaxCircuitsPerPeer > relayconfig.MaximumCircuitsPerPeer || r.BufferBytes <= 0 {
+		return errors.New("circuit limit must be in [1,256] and buffer size must be positive")
 	}
 	if err := r.RelayLimits.Validate(); err != nil {
 		return err

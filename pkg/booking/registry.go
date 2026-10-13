@@ -10,11 +10,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aukilabs/hagall/pkg/relayconfig"
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 
-const MaximumProviderBookings = 256
+const MaximumProviderBookings = relayconfig.MaxCapacityValue
 
 var (
 	ErrAuthorityExpired   = errors.New("relay booking authority is expired")

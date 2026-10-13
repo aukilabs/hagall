@@ -26,7 +26,7 @@ const (
 	DefaultCircuitDataBytes      = int64(10 * 1024 * 1024 * 1024)
 	DefaultLocalCapacity         = 32
 	DefaultDMSRelayCapacity      = 32
-	MaximumLocalCapacity         = 256
+	MaximumLocalCapacity         = relayconfig.MaxCapacityValue
 	MinimumResourceManagerMemory = int64(128 << 20)
 	DefaultReservationTTL        = 10 * time.Minute
 	RequiredProviderSessionTTL   = 3 * time.Minute
@@ -383,9 +383,6 @@ func (c Config) Validate() error {
 	if admission.MaximumEntries <= 0 || admission.AuthConcurrency <= 0 || admission.AttemptsPerPeer <= 0 || admission.AttemptsPerIP <= 0 {
 		errs = append(errs, errors.New("admission cardinality, auth concurrency, and attempt limits must be positive"))
 	}
-	if admission.AttemptsPerPeer > admission.AuthConcurrency || admission.AttemptsPerIP > admission.AuthConcurrency {
-		errs = append(errs, errors.New("per-peer and per-IP auth limits must not exceed total auth concurrency"))
-	}
 	if admission.AttemptWindow <= 0 || admission.AttemptWindow > time.Minute {
 		errs = append(errs, errors.New("auth attempt window must be in (0s,1m]"))
 	}
@@ -414,8 +411,8 @@ func (c Config) Validate() error {
 			errs = append(errs, fmt.Errorf("%s must cover local relay capacity", name))
 		}
 	}
-	if c.Relay.MaxCircuitsPerPeer <= 0 || c.Relay.MaxCircuitsPerPeer > MaximumLocalCapacity {
-		errs = append(errs, fmt.Errorf("maximum circuits per peer must be in [1,%d]", MaximumLocalCapacity))
+	if c.Relay.MaxCircuitsPerPeer <= 0 || c.Relay.MaxCircuitsPerPeer > relayconfig.MaximumCircuitsPerPeer {
+		errs = append(errs, fmt.Errorf("maximum circuits per peer must be in [1,%d]", relayconfig.MaximumCircuitsPerPeer))
 	}
 	if c.Relay.ReservationTTL != DefaultReservationTTL {
 		errs = append(errs, fmt.Errorf("reservation TTL must equal the fixed %s", DefaultReservationTTL))
@@ -579,8 +576,8 @@ var environmentMatrix = []EnvSpec{
 	{Name: "RELAY_ADMISSION_MAX_ENTRIES", Default: "4096", Constraint: ">0"},
 	{Name: "RELAY_ADMISSION_TTL", Default: "30s", Constraint: "(0s,30s]"},
 	{Name: "RELAY_AUTH_ATTEMPT_WINDOW", Default: "10s", Constraint: "(0s,1m]"},
-	{Name: "RELAY_AUTH_MAX_ATTEMPTS_PER_IP", Default: "32", Constraint: "1..auth concurrency"},
-	{Name: "RELAY_AUTH_MAX_ATTEMPTS_PER_PEER", Default: "8", Constraint: "1..auth concurrency"},
+	{Name: "RELAY_AUTH_MAX_ATTEMPTS_PER_IP", Default: "32", Constraint: ">0; attempts per window, independent of concurrency"},
+	{Name: "RELAY_AUTH_MAX_ATTEMPTS_PER_PEER", Default: "8", Constraint: ">0; attempts per window, independent of concurrency"},
 	{Name: "RELAY_AUTH_MAX_CONCURRENCY", Default: "64", Constraint: ">0"},
 	{Name: "RELAY_ACCEPT_BOOKINGS", Default: "false", Constraint: "boolean; static operator gate for one process incarnation"},
 	{Name: "RELAY_BUFFER_SIZE", Default: "2048", Constraint: "1..1048576 bytes"},
@@ -593,7 +590,7 @@ var environmentMatrix = []EnvSpec{
 	{Name: "RELAY_DDS_KEY_OVERLAP", Default: "31m0s", Constraint: ">=30m plus clock skew"},
 	{Name: "RELAY_DDS_KEY_REFRESH_INTERVAL", Default: "2m0s", Constraint: ">0"},
 	{Name: "RELAY_DDS_KEY_UNKNOWN_REFRESH_INTERVAL", Default: "30s", Constraint: "(0s,periodic refresh]"},
-	{Name: "RELAY_DDS_MAX_CONCURRENCY", Default: "unset (DMS relay default 32)", Constraint: "optional 1..256 DDS-signed override; must fit every local backstop"},
+	{Name: "RELAY_DDS_MAX_CONCURRENCY", Default: "unset (DMS relay default 32)", Constraint: "optional positive PostgreSQL INTEGER DDS-signed override; must fit every local backstop"},
 	{Name: "RELAY_DDS_PUBLIC_KEY_URL", Constraint: "HTTPS, or loopback HTTP with local-test switch", Required: true},
 	{Name: "RELAY_DDS_SIGNING_METHOD", Default: "ES256", Constraint: "registered JWT signing method"},
 	{Name: "RELAY_DDS_URL", Constraint: "HTTPS, or loopback HTTP with local-test switch", Required: true},
@@ -601,12 +598,12 @@ var environmentMatrix = []EnvSpec{
 	{Name: "RELAY_EMPTY_CLAIM_MAX_JITTER_FRACTION", Default: "0.2", Constraint: "[0,0.2] positive-jitter ceiling"},
 	{Name: "RELAY_HTTP_REQUEST_TIMEOUT", Default: "10s", Constraint: "(0s,30s]"},
 	{Name: "RELAY_LIBP2P_PRIVATE_KEY_FILE", Constraint: "0600-style non-empty regular binary key file", Required: true, SecretReference: true},
-	{Name: "RELAY_LOCAL_CAPACITY", Default: "32", Constraint: "1..256 and >= effective DMS capacity"},
+	{Name: "RELAY_LOCAL_CAPACITY", Default: "32", Constraint: "positive PostgreSQL INTEGER and >= effective DMS capacity"},
 	{Name: "RELAY_LOCAL_TEST_ALLOW_HTTP", Default: "false", Constraint: "boolean; HTTP remains loopback-only"},
 	{Name: "RELAY_MAX_CIRCUITS_PER_PEER", Default: "16", Constraint: "1..256"},
-	{Name: "RELAY_MAX_RESERVATIONS", Default: "32", Constraint: "local/effective capacity..256"},
-	{Name: "RELAY_MAX_RESERVATIONS_PER_ASN", Default: "32", Constraint: "local/effective capacity..256"},
-	{Name: "RELAY_MAX_RESERVATIONS_PER_IP", Default: "32", Constraint: "local/effective capacity..256"},
+	{Name: "RELAY_MAX_RESERVATIONS", Default: "32", Constraint: "local/effective capacity..2147483647"},
+	{Name: "RELAY_MAX_RESERVATIONS_PER_ASN", Default: "32", Constraint: "local/effective capacity..2147483647"},
+	{Name: "RELAY_MAX_RESERVATIONS_PER_IP", Default: "32", Constraint: "local/effective capacity..2147483647"},
 	{Name: "RELAY_METRICS_ADDR", Default: "127.0.0.1:9091", Constraint: "valid TCP host:port, different from admin"},
 	{Name: "RELAY_NODE_TOKEN_REFRESH_FRACTION", Default: "0.75", Constraint: "fixed 0.75"},
 	{Name: "RELAY_PROVIDER_LEASE_HEARTBEAT_MAX_FRACTION", Default: "0.35", Constraint: "fixed 0.35"},

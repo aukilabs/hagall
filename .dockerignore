@@ -9,6 +9,8 @@
 !pkg/**
 !vendor/
 !vendor/**
+!scripts/
+!scripts/patch-relay.go
 **/.env
 **/.env.*
 **/*.key

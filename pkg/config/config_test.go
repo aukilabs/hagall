@@ -294,7 +294,7 @@ func TestValidationRejectsUnsafeCrossFieldConfigurations(t *testing.T) {
 		{name: "key staleness", contains: "staleness", mutate: func(c *Config) { c.VerificationKeys.MaxStaleness = 30 * time.Minute }},
 		{name: "unknown refresh", contains: "unknown-signature", mutate: func(c *Config) { c.VerificationKeys.UnknownRefreshInterval = 3 * time.Minute }},
 		{name: "admission TTL", contains: "admission TTL", mutate: func(c *Config) { c.Admission.TTL = 31 * time.Second }},
-		{name: "auth peer concurrency", contains: "must not exceed", mutate: func(c *Config) { c.Admission.AttemptsPerPeer = 65 }},
+		{name: "auth zero attempts", contains: "must be positive", mutate: func(c *Config) { c.Admission.AttemptsPerPeer = 0 }},
 		{name: "capacity below range", contains: "local relay capacity", mutate: func(c *Config) { c.Relay.LocalCapacity = 0 }},
 		{name: "capacity above range", contains: "local relay capacity", mutate: func(c *Config) { c.Relay.LocalCapacity = 257 }},
 		{name: "DDS capacity below range", contains: "DDS max_concurrency", mutate: func(c *Config) { value := 0; c.Relay.DDSMaxConcurrency = &value }},
@@ -444,4 +444,47 @@ func ExampleEnvironmentMatrix() {
 	// Output:
 	// RELAY_ACCEPT_BOOKINGS=false
 	// RELAY_ADMIN_ADDR=127.0.0.1:9090
+}
+
+func TestConfiguredCapacityRequiresMatchingConnectionBudgets(t *testing.T) {
+	for _, capacity := range []int{800, 2048, 10000} {
+		t.Run(fmt.Sprint(capacity), func(t *testing.T) {
+			values := requiredEnvironment(t)
+			for _, name := range []string{"RELAY_LOCAL_CAPACITY", "RELAY_DDS_MAX_CONCURRENCY", "RELAY_MAX_RESERVATIONS", "RELAY_MAX_RESERVATIONS_PER_IP", "RELAY_MAX_RESERVATIONS_PER_ASN"} {
+				values[name] = fmt.Sprint(capacity)
+			}
+			_, err := LoadFrom(lookupMap(values))
+			require.ErrorContains(t, err, "connection-manager low water")
+			values["RELAY_CONNMGR_LOW_WATER"] = fmt.Sprint(capacity)
+			values["RELAY_CONNMGR_HIGH_WATER"] = fmt.Sprint(capacity + 256)
+			values["RELAY_RM_CONNECTIONS"] = fmt.Sprint(max(2048, capacity+256))
+			values["RELAY_RM_FILE_DESCRIPTORS"] = fmt.Sprint(max(4096, capacity+256))
+			values["RELAY_RM_STREAMS"] = fmt.Sprint(max(8192, capacity*4))
+			values["RELAY_MAX_CIRCUITS_PER_PEER"] = "32"
+			cfg, err := LoadFrom(lookupMap(values))
+			require.NoError(t, err)
+			effective, err := cfg.EffectiveCapacityForDDSClaim(&capacity)
+			require.NoError(t, err)
+			require.Equal(t, capacity, effective)
+			values["RELAY_LOCAL_CAPACITY"] = "0"
+			_, err = LoadFrom(lookupMap(values))
+			require.ErrorContains(t, err, "local relay capacity")
+			values["RELAY_LOCAL_CAPACITY"] = fmt.Sprint(capacity)
+			values["RELAY_MAX_CIRCUITS_PER_PEER"] = "257"
+			_, err = LoadFrom(lookupMap(values))
+			require.ErrorContains(t, err, "maximum circuits per peer must be in [1,256]")
+		})
+	}
+}
+
+func TestAuthAttemptBudgetIsIndependentOfConcurrency(t *testing.T) {
+	values := requiredEnvironment(t)
+	values["RELAY_AUTH_MAX_CONCURRENCY"] = "128"
+	values["RELAY_AUTH_MAX_ATTEMPTS_PER_IP"] = "512"
+	values["RELAY_AUTH_MAX_ATTEMPTS_PER_PEER"] = "256"
+	cfg, err := LoadFrom(lookupMap(values))
+	require.NoError(t, err)
+	require.Equal(t, 128, cfg.Admission.AuthConcurrency)
+	require.Equal(t, 512, cfg.Admission.AttemptsPerIP)
+	require.Equal(t, 256, cfg.Admission.AttemptsPerPeer)
 }
