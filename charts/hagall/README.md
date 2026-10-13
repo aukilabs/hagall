@@ -1,13 +1,17 @@
 # Hagall deployment wrapper
 
-This chart pins `hagall` version **1.0.0** from `https://charts.aukiverse.com`.
+This chart pins `hagall` version **1.1.0** from `https://charts.aukiverse.com`.
 Templates, defaults, schema, and operator instructions are maintained in
 [aukilabs/helm-charts](https://github.com/aukilabs/helm-charts/tree/main/charts/hagall).
 This repository supplies the wrapper and dev defaults used by Argo CD.
 
 All overrides are nested under `hagall:`. `values.dev.yaml` preserves the
-`auki-relay-node` resource names and selector, capacity of 128, admission limits,
-and enabled booking gate. Infrastructure supplies the existing identity Secret,
+`auki-relay-node` resource names and selector, admission limits, and enabled
+booking gate. Dev allows 2,048 reservations, with the existing 128-circuit
+per-peer limit. The upstream chart sizes connection, stream, file-descriptor,
+and admission-cache budgets from capacity. Deploy Hagall RC-1 and DMS v0.6.0
+(including migration 0013), with DMS provider and organization ceilings of 2,048,
+before using this configuration. Infrastructure supplies the existing identity Secret,
 DDS/DMS endpoints, public host, Peer ID, image digest, certificate, and subnets.
 
 ```sh
