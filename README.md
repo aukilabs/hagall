@@ -59,6 +59,29 @@ make build  # bin/auki-relay-node; override VERSION with a semantic version
 make test  # formatting, vet, and tests
 ```
 
+These targets generate vendored dependencies and apply a version-checked
+backport for go-libp2p v0.41.1. Its relay disconnect callback rechecks peer
+connectedness under the reservation mutex, preventing an old connection's
+cleanup from deleting a newly accepted reservation. The quick initial check
+remains; expiry, admission and circuit limits are unchanged.
+
+`scripts/patch-relay.go` verifies the upstream and patched file checksums and
+rejects unexpected dependency versions or source changes. Generated vendor files
+remain untracked. Review and remove the backport once the dependency contains an
+equivalent fix. After running `make go-vendor`, direct Go commands should use
+`-mod=vendor`; `-mod=mod` bypasses the backport. The container build rejects
+unpatched vendor input. No dependency version or wire contract changes.
+
+The regression `TestReservationDisconnectPreservesReplacement` uses actual
+loopback reservation and circuit messages. It delays an old disconnect callback
+while a replacement reserves, then requires the new reservation to survive.
+After `make go-vendor`, run:
+
+```sh
+go test -mod=vendor -race -count=20 \
+  -run TestReservationDisconnectPreservesReplacement ./pkg/node
+```
+
 GitHub Actions runs these checks on pushes to `main`, `feature/*`, `bug/*`,
 `chore/*`, and `hotfix/*`, and supports manual runs. It uses Go 1.23 and the
 existing `GLOBAL_PUBLIC_GITHUB_APP_ID` / `GLOBAL_PUBLIC_GITHUB_APP_PRIVATE_KEY`
@@ -84,7 +107,7 @@ using the existing `DOCKER_USERNAME` and `DOCKER_PASSWORD` Actions secrets.
 To build the container locally after configuring private-module access:
 
 ```sh
-go mod vendor
+make go-vendor
 docker build --build-arg VERSION=v0.0.0 -t hagall:local .
 ```
 
