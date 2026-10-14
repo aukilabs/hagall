@@ -5,7 +5,7 @@ identity; DMS assigns relay bookings. This replaces the previous Hagall server.
 
 ## Run locally
 
-Requires Go 1.23+, Make, access to private Auki Go modules, and running DDS/DMS
+Requires Go 1.25+, Make, access to private Auki Go modules, and running DDS/DMS
 services with relay support.
 
 ```sh
@@ -83,8 +83,9 @@ go test -mod=vendor -race -count=20 \
 ```
 
 GitHub Actions runs these checks on pushes to `main`, `feature/*`, `bug/*`,
-`chore/*`, and `hotfix/*`, and supports manual runs. It uses Go 1.23 and the
-existing `GLOBAL_PUBLIC_GITHUB_APP_ID` / `GLOBAL_PUBLIC_GITHUB_APP_PRIVATE_KEY`
+`chore/*`, and `hotfix/*`, and supports manual runs. It uses the Go version in
+`go.mod` and the existing `GLOBAL_PUBLIC_GITHUB_APP_ID` /
+`GLOBAL_PUBLIC_GITHUB_APP_PRIVATE_KEY`
 secrets to read the private `service-lib` module. The App needs Contents: read
 access to that repository.
 
