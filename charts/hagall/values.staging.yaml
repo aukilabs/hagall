@@ -1,0 +1,24 @@
+# Staging preflight only. Infrastructure must supply every required identity,
+# endpoint and AWS input; never layer ci/values.yaml into a deployment.
+hagall:
+  # Separate Application/release from legacy hagall; never adopt its resources.
+  fullnameOverride: auki-relay-node
+  replicaCount: 1
+  image:
+    repository: aukilabs/hagall
+    tag: v1.0.0-RC-0
+    digest: sha256:72550a08119d48e39b3d34d4e1a815624871a090a0b8a24b8f88ba2bcb00ba24
+  relay:
+    capacity: 128
+    # Static process gate. Enable only in a separately approved activation.
+    acceptBookings: false
+    authConcurrency: 128
+    authAttemptsPerIP: 128
+    authAttemptsPerPeer: 128
+  service:
+    public:
+      tcpPort: 443
+      websocketPort: 4443
+  # No dependency on a monitoring CRD during preflight; metrics stay private.
+  podMonitor:
+    enabled: false

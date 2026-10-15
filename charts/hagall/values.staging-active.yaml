@@ -1,0 +1,6 @@
+# Opt-in ONLY after staging preflight and explicit operator approval.
+# Layer after values.staging.yaml and infrastructure values. Removing this
+# overlay (and any equivalent Helm parameter) closes bookings on next rollout.
+hagall:
+  relay:
+    acceptBookings: true
