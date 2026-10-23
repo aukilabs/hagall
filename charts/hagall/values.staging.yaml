@@ -3,7 +3,8 @@
 hagall:
   # Separate Application/release from legacy hagall; never adopt its resources.
   fullnameOverride: auki-relay-node
-  replicaCount: 1
+  # Disabled while staging DMS runs the production version without P2P APIs.
+  replicaCount: 0
   image:
     repository: aukilabs/hagall
     tag: v1.0.0-RC-0
