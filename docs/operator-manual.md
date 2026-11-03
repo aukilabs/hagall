@@ -7,8 +7,6 @@ A booking reserves relay capacity for a client.
 
 This guide covers the new relay only.
 Use the [Hagall README](https://github.com/aukilabs/hagall/blob/main/README.md) for developer instructions.
-This repository owns the operator guide and check script.
-The documentation site imports this guide.
 
 ## Before you start
 
