@@ -3,6 +3,13 @@
 Standalone libp2p Circuit Relay v2 node. DDS provides authentication and peer
 identity; DMS assigns relay bookings. This replaces the previous Hagall server.
 
+## Operator documentation
+
+Use the [operator guide](docs/operator-manual.md) to install and check the new relay.
+The [read-only preflight script](scripts/check_relay.py) checks local state and public endpoints.
+Run its regression tests with `make test-operator`.
+The documentation site imports the guide from this repository.
+
 ## Run locally
 
 Requires Go 1.25+, Make, access to private Auki Go modules, and running DDS/DMS

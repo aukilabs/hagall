@@ -32,3 +32,7 @@ chart-check:
 	helm lint --strict charts/hagall -f charts/hagall/ci/values.yaml -f charts/hagall/values.dev.yaml
 	helm template hagall charts/hagall --namespace default -f charts/hagall/ci/values.yaml >/dev/null
 	helm template hagall charts/hagall --namespace default -f charts/hagall/ci/values.yaml -f charts/hagall/values.dev.yaml >/dev/null
+
+.PHONY: test-operator
+test-operator:
+	python3 -B -m unittest discover -s tests -v
