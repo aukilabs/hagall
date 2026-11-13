@@ -9,7 +9,7 @@ hagall:
     tag: v1.0.0-RC-6
     digest: sha256:76f356e15b645a2eeda8f3b681a54b9ec24d9423ef6fd02a1e98e8f533134bd5
   relay:
-    capacity: 2048
+    capacity: 128
     maxCircuitsPerPeer: 128
     # Sync only after DDS/DMS admission and billing verification.
     acceptBookings: true
