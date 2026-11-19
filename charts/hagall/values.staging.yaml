@@ -4,6 +4,9 @@ hagall:
   # Separate Application/release from legacy hagall; never adopt its resources.
   fullnameOverride: auki-relay-node
   replicaCount: 1
+  resources:
+    requests:
+      memory: 256Mi
   image:
     repository: aukilabs/hagall
     tag: v1.0.0
