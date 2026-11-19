@@ -1,0 +1,25 @@
+# Staging promotion: infrastructure supplies the retained staging identity,
+# endpoints and AWS inputs. Never layer ci/values.yaml into a deployment.
+hagall:
+  # Separate Application/release from legacy hagall; never adopt its resources.
+  fullnameOverride: auki-relay-node
+  replicaCount: 1
+  image:
+    repository: aukilabs/hagall
+    tag: v1.0.0
+    digest: sha256:60d478c86542d11f8a9c961d2635d0e430cc1678663a1a1a150bd689cd7e54e8
+  relay:
+    capacity: 128
+    maxCircuitsPerPeer: 128
+    # Sync only after DDS/DMS admission and billing verification.
+    acceptBookings: true
+    authConcurrency: 128
+    authAttemptsPerIP: 512
+    authAttemptsPerPeer: 128
+  service:
+    public:
+      tcpPort: 443
+      websocketPort: 4443
+  # Sync the monitoring CRDs before the relay. Metrics remain private.
+  podMonitor:
+    enabled: true
